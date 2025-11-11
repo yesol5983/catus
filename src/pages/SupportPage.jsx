@@ -17,6 +17,17 @@ export default function SupportPage() {
   const [showPlaneAnimation, setShowPlaneAnimation] = useState(false);
   const maxSupportMessageLength = 100;
 
+  // 기본 일기 이미지 생성 (SVG)
+  const createDefaultDiaryImage = () => {
+    const svg = `
+      <svg width="240" height="240" xmlns="http://www.w3.org/2000/svg">
+        <rect width="240" height="240" fill="#F9F9F9"/>
+        <text x="50%" y="50%" font-size="18" fill="#8B9A8E" text-anchor="middle" dy=".35em">일기 그림</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  };
+
   useEffect(() => {
     const diaryEntries = Object.entries(diaryData);
     if (diaryEntries.length > 0) {
@@ -28,7 +39,7 @@ export default function SupportPage() {
         date: "2025-11-15",
         emotion: "슬픔",
         title: "약간은 슬펐던 하루",
-        image: "https://via.placeholder.com/240x240/F9F9F9/8B9A8E?text=일기+그림",
+        image: createDefaultDiaryImage(),
       });
     }
   }, [diaryData]);

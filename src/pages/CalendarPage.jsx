@@ -13,6 +13,17 @@ export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [diaryData, setDiaryData] = useLocalStorage('diary_data', {});
 
+  // SVG 이미지 생성 함수
+  const createEmotionImage = (color, emoji) => {
+    const svg = `
+      <svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" fill="${color}"/>
+        <text x="50%" y="50%" font-size="40" text-anchor="middle" dy=".35em">${emoji}</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  };
+
   //  Mock diary data from diaryData.js (localStorage가 비어있을 때만)
   useEffect(() => {
     // localStorage에 데이터가 없으면 mock 데이터로 초기화
@@ -36,7 +47,7 @@ export default function CalendarPage() {
 
         acc[dateKey] = {
           ...diary,
-          image: `https://via.placeholder.com/100/${emotionColorMap[diary.emotion]?.replace('#', '')}/FFFFFF?text=${emotionEmojiMap[diary.emotion]}`
+          image: createEmotionImage(emotionColorMap[diary.emotion], emotionEmojiMap[diary.emotion])
         };
         return acc;
       }, {});

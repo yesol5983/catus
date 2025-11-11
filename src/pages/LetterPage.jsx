@@ -37,14 +37,25 @@ export default function LetterPage() {
     }
   };
 
+  // 기본 일기 이미지 생성 (SVG)
+  const createDefaultDiaryImage = () => {
+    const svg = `
+      <svg width="260" height="260" xmlns="http://www.w3.org/2000/svg">
+        <rect width="260" height="260" fill="#F9F9F9"/>
+        <text x="50%" y="50%" font-size="20" fill="#8B9A8E" text-anchor="middle" dy=".35em">그림일기</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  };
+
   // 메시지와 연결된 일기 이미지 가져오기 (임시로 랜덤 일기 이미지 사용)
   const getDiaryImage = () => {
     const diaryEntries = Object.values(diaryData);
     if (diaryEntries.length > 0) {
       const randomDiary = diaryEntries[Math.floor(Math.random() * diaryEntries.length)];
-      return randomDiary?.image || "https://via.placeholder.com/260x260/F9F9F9/8B9A8E?text=그림일기";
+      return randomDiary?.image || createDefaultDiaryImage();
     }
-    return "https://via.placeholder.com/260x260/F9F9F9/8B9A8E?text=그림일기";
+    return createDefaultDiaryImage();
   };
 
   // 날짜 포맷팅
