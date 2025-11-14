@@ -10,7 +10,7 @@ export default function OnboardingStart() {
   const handleStart = () => navigate("/onboarding/flow");
   const handleSkip = () => navigate("/home");
   return (
-    <div className="h-screen w-full bg-[#fef9f1] flex flex-col items-center justify-center overflow-hidden">
+    <div className="h-screen w-full bg-main-bg flex flex-col items-center justify-center overflow-hidden">
 
       {/* 말풍선 + 고양이 */}
       <div className="relative flex flex-col items-center mb-6">
@@ -29,7 +29,7 @@ export default function OnboardingStart() {
           }}
           style={{ transform: 'translateY(-15px)', marginBottom: '20px' }}
         >
-          <p className="text-white text-lg font-bold">=^._.^= ∫</p>
+          <p className="text-[white] text-lg font-[800]">=^._.^= ∫</p>
         </motion.div>
 
         {/* 고양이 이미지 */}
@@ -51,14 +51,15 @@ export default function OnboardingStart() {
 
       {/* 설명 */}
       <motion.div
-        className="text-center text-gray-800 leading-relaxed mb-[10px] mt-[24px]"
+        className="text-center leading-relaxed mb-[10px] mt-[24px]"
+        style={{ color: 'var(--color-text-primary)' }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.8 }}
       >
         <p className="text-[13px] sm:text-[15px] mb-[-12px]">집사님은 어떤 사람인가요?</p>
         <p className="text-[13px] sm:text-[15px] mb-[-12px]">달이에게 집사님을 소개해주세요</p>
-        <p className="text-[13px] sm:text-[15px] text-gray-500 mt-2">
+        <p className="text-[13px] sm:text-[15px] mt-2" style={{ color: 'var(--color-text-secondary)' }}>
           어떤 데이터도 누구에게도 전송되지 않습니다.
         </p>
       </motion.div>
@@ -70,10 +71,10 @@ export default function OnboardingStart() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 1.2 }}
       >
-        <button onClick={handleStart} className="w-[190px] py-[13px] bg-black text-white rounded-full text-[14px] sm:text-[16px] font-semibold hover:bg-gray-900 transition-colors ">
+        <button onClick={handleStart} className="w-[190px] py-[13px] bg-[black] text-[white] rounded-full text-[14px] sm:text-[16px] font-semibold hover:bg-gray-900 transition-colors ">
           네, 진행할게요
         </button>
-        <button onClick={handleSkip} className="text-gray-800 text-[14px] sm:text-[16px] hover:text-black transition-colors bg-transparent border-none mt-[13px]">
+        <button onClick={handleSkip} className="text-[14px] sm:text-[16px] transition-colors bg-transparent border-none mt-[13px]" style={{ color: 'var(--color-text-primary)' }}>
           건너뛰기
         </button>
       </motion.div>

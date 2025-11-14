@@ -28,7 +28,7 @@ function LoadingSpinner({
       style={fullScreen ? {
         position: 'fixed',
         inset: 0,
-        backgroundColor: '#fef9f1',
+        backgroundColor: 'var(--color-main-bg)',
         zIndex: 1000,
         gap: '16px'
       } : {

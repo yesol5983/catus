@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ROUTES } from "../constants/routes";
 import { useTutorial } from "../contexts/TutorialContext";
+import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import Tutorial from "./Tutorial";
 
@@ -14,11 +15,14 @@ import cactus3 from "../assets/images/catus3.png";
 import cactus4 from "../assets/images/catus4.png";
 import book from "../assets/images/book.png";
 import bg from "../assets/images/home-background.png";
+import bgDark from "../assets/images/background-dark.png";
+import settingIcon from "../assets/images/setting.png";
 
 export default function HomePage({ hideButtons = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isTutorialCompleted, startTutorial } = useTutorial();
+  const { isDarkMode } = useDarkMode();
 
   // ====== LocalStorage ======
   const [receivedMessages, setReceivedMessages] = useLocalStorage("received_messages", []);
@@ -45,7 +49,7 @@ export default function HomePage({ hideButtons = false }) {
       console.log("📨 새 응원 메시지 감지!");
       setHasNewMessage(true);
 
-      // ✅ 처음 응원 메시지를 받은 경우 한 번만 튜토리얼 표시
+      // 처음 응원 메시지를 받은 경우 한 번만 튜토리얼 표시
       if (!supportTutorialShown) {
         setShowSupportTutorial(true);
       }
@@ -126,7 +130,7 @@ export default function HomePage({ hideButtons = false }) {
 
   const handleTutorialComplete = () => setShowTutorial(false);
 
-  // ✅ 테스트용: 응원 메시지 수신 시뮬레이션
+  // 테스트용: 응원 메시지 수신 시뮬레이션
   const simulateMessage = () => {
     const testMessages = [
       '당신은 충분히 좋다고 말이야 💛',
@@ -153,10 +157,10 @@ export default function HomePage({ hideButtons = false }) {
 
   // ====== 렌더 ======
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-end bg-[#fef9f1]">
+    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-end" style={{ backgroundColor: '#fef9f1' }}>
       {/* 배경 */}
       <img
-        src={bg}
+        src={isDarkMode ? bgDark : bg}
         alt="background"
         className="absolute inset-0 w-full h-full object-fill select-none pointer-events-none"
         draggable="false"
@@ -205,105 +209,118 @@ export default function HomePage({ hideButtons = false }) {
             const catElement = document.querySelector('.cat-image');
             if (!catElement) return null;
             const rect = catElement.getBoundingClientRect();
+            const catCenterX = rect.left + rect.width / 2;
+            const messageWidth = 240;
+            const padding = 24;
+
+            // 말풍선을 고양이 중심에 배치하되, 화면 밖으로 나가지 않도록 제한
+            const idealMessageLeft = catCenterX - messageWidth / 2;
+            const messageLeft = Math.max(20, Math.min(window.innerWidth - messageWidth - 20, idealMessageLeft));
+            const messageTop = rect.top - padding;
+
+            // 화살표는 항상 고양이 중심을 가리킴
+            const arrowLeft = catCenterX - messageLeft;
+
             return (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                style={{
-                  position: 'absolute',
-                  top: rect.top - 8,
-                  left: rect.left - 8,
-                  width: rect.width + 16,
-                  height: rect.height + 16,
-                  borderRadius: '12px',
-                  boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
-                  pointerEvents: 'none',
-                  zIndex: 10000,
-                  transition: 'all 0.3s ease'
-                }}
-              />
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: rect.top - 8,
+                    left: rect.left - 8,
+                    width: rect.width + 16,
+                    height: rect.height + 16,
+                    borderRadius: '12px',
+                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                    pointerEvents: 'none',
+                    zIndex: 10000,
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+
+                {/* 메시지 박스 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: `${window.innerHeight - messageTop}px`,
+                    left: `${messageLeft}px`,
+                    width: `${messageWidth}px`,
+                    pointerEvents: 'all',
+                    zIndex: 10001
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      background: 'white',
+                      borderRadius: '16px',
+                      padding: '13px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {/* 화살표 */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '-7px',
+                        left: `${arrowLeft}px`,
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '9px solid transparent',
+                        borderRight: '9px solid transparent',
+                        borderTop: '9px solid white'
+                      }}
+                    />
+
+                    {/* 메시지 텍스트 */}
+                    <p
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '1.5',
+                        color: '#333',
+                        marginBottom: '12px',
+                        whiteSpace: 'pre-line'
+                      }}
+                    >
+                      달이가 편지를 들고 있어요 ✉️{'\n'}달이에게 편지를 받아봐요
+                    </p>
+
+                    {/* 알아가기 버튼 */}
+                    <button
+                      onClick={() => {
+                        setSupportTutorialShown(true);
+                        setShowSupportTutorial(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#666',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                      onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                    >
+                      달이를 3번 쓰다듬어 봐요
+                    </button>
+                  </div>
+                </motion.div>
+            </>
             );
           })()}
-
-          {/* 메시지 박스 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            style={{
-              position: 'absolute',
-              bottom: '40%',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              maxWidth: '280px',
-              pointerEvents: 'all',
-              zIndex: 10001
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div
-              style={{
-                position: 'relative',
-                background: 'white',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                textAlign: 'center'
-              }}
-            >
-              {/* 화살표 */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '-8px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: 0,
-                  height: 0,
-                  borderLeft: '8px solid transparent',
-                  borderRight: '8px solid transparent',
-                  borderTop: '8px solid white'
-                }}
-              />
-
-              {/* 메시지 텍스트 */}
-              <p
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '1.6',
-                  color: '#333',
-                  marginBottom: '16px',
-                  whiteSpace: 'pre-line'
-                }}
-              >
-                달이가 편지를 들고 있어요 ✉️{'\n'}달이에게 편지를 받아봐요
-              </p>
-
-              {/* 알아가기 버튼 */}
-              <button
-                onClick={() => {
-                  setSupportTutorialShown(true);
-                  setShowSupportTutorial(false);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '10px 16px',
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#666',
-                  fontSize: '13px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  borderRadius: '8px',
-                  transition: 'background 0.2s'
-                }}
-                onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
-                onMouseLeave={(e) => e.target.style.background = 'transparent'}
-              >
-                달이를 3번 쓰다듬어 봐요
-              </button>
-            </div>
-          </motion.div>
         </motion.div>
       )}
 
@@ -326,6 +343,7 @@ export default function HomePage({ hideButtons = false }) {
               src={img}
               alt={`cactus-${idx + 1}`}
               className="object-contain drop-shadow-lg w-[8vw] min-w-[40px] max-w-[70px]"
+              style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
             />
           </button>
         ))}
@@ -341,46 +359,69 @@ export default function HomePage({ hideButtons = false }) {
           src={book}
           alt="diary"
           className="object-contain drop-shadow-xl w-[18vw] min-w-[80px] max-w-[150px]"
+          style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
         />
       </button>
 
       {/* 고양이 */}
-      <button
-        onClick={hasNewMessage ? handleCatMessageClick : openChat}
-        className="cat-container absolute z-20 bg-transparent p-0 border-0"
-        style={{
-          bottom: "8%",
-          left: "48%",
-          transform: `translate(calc(8vw), 0) scale(${catScale})`,
-          transformOrigin: "bottom left",
-        }}
-      >
-        <motion.img
-          src={hasNewMessage ? catMessageImage : catImage}
-          alt="cat"
-          className="cat-image object-contain drop-shadow-2xl w-[20vw] min-w-[90px] max-w-[180px]"
-          key={catAnimationKey}
-          animate={hasNewMessage ? {
-            y: [0, -20, -10, -15, 0],
-            scale: [1, 1.05, 1.02, 1.03, 1]
-          } : {}}
-          transition={{
-            duration: 0.6,
-            ease: [0.34, 1.56, 0.64, 1]
+      {hasNewMessage ? (
+        <button
+          onClick={handleCatMessageClick}
+          className="cat-container absolute z-20 bg-transparent p-0 border-0 cursor-pointer"
+          style={{
+            bottom: "8%",
+            left: "48%",
+            transform: `translate(calc(8vw), 0) scale(${catScale})`,
+            transformOrigin: "bottom left",
           }}
-        />
-      </button>
+        >
+          <motion.img
+            src={catMessageImage}
+            alt="cat"
+            className="cat-image object-contain drop-shadow-2xl w-[20vw] min-w-[90px] max-w-[180px]"
+            style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
+            key={catAnimationKey}
+            animate={{
+              y: [0, -20, -10, -15, 0],
+              scale: [1, 1.05, 1.02, 1.03, 1]
+            }}
+            transition={{
+              duration: 0.6,
+              ease: [0.34, 1.56, 0.64, 1]
+            }}
+          />
+        </button>
+      ) : (
+        <div
+          className="cat-container absolute z-20"
+          style={{
+            bottom: "8%",
+            left: "48%",
+            transform: `translate(calc(8vw), 0) scale(${catScale})`,
+            transformOrigin: "bottom left",
+          }}
+        >
+          <motion.img
+            src={catImage}
+            alt="cat"
+            className="cat-image object-contain drop-shadow-2xl w-[20vw] min-w-[90px] max-w-[180px]"
+            style={{ filter: isDarkMode ? 'brightness(0.9)' : 'none' }}
+          />
+        </div>
+      )}
 
       {/* 설정 */}
       {!hideButtons && (
         <button
           onClick={() => navigate(ROUTES.SETTINGS)}
-          className="settings-icon absolute top-[4%] right-[4%] flex items-center justify-center z-30 text-[#3E4A59] hover:text-gray-900 hover:scale-110 transition-transform bg-transparent border-0"
+          className="settings-icon absolute top-[4%] right-[4%] flex items-center justify-center z-30 hover:scale-110 transition-transform bg-transparent border-0"
           aria-label="설정"
         >
-          <span className="material-symbols-outlined text-[32px] sm:text-[36px]">
-            settings_heart
-          </span>
+          <img
+            src={settingIcon}
+            alt="settings"
+            className="w-[24px] h-[24px] sm:w-[28px] sm:h-[28px]"
+          />
         </button>
       )}
 
@@ -388,7 +429,7 @@ export default function HomePage({ hideButtons = false }) {
       {!hideButtons && (
         <button
           onClick={simulateMessage}
-          className="absolute top-[4%] left-[4%] bg-[#59B464] text-white px-3 py-1.5 rounded-md text-[13px] hover:bg-[#4EA158] transition border-0"
+          className="absolute top-[4%] left-[4%] bg-[#59B464] text-[white] px-3 py-1.5 rounded-md text-[13px] hover:bg-[#4EA158] transition border-0"
         >
           테스트 메시지 받기
         </button>

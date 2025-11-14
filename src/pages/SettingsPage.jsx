@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 function SettingsPage() {
   const navigate = useNavigate();
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // 개별 항목 펼침/접힘 상태
   const [expandedItems, setExpandedItems] = useState({
@@ -35,12 +37,25 @@ function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveType, setSaveType] = useState(''); // 'nickname', 'password', 'diaryTime'
 
-  // 개별 항목 토글
+  // 개별 항목 토글 (한 번에 하나씩만 열림)
   const toggleItem = (item) => {
-    setExpandedItems(prev => ({
-      ...prev,
-      [item]: !prev[item]
-    }));
+    setExpandedItems(prev => {
+      // 이미 열려있는 항목을 클릭하면 닫기
+      if (prev[item]) {
+        return {
+          nickname: false,
+          password: false,
+          diaryTime: false
+        };
+      }
+      // 새로운 항목을 열 때는 다른 항목 모두 닫기
+      return {
+        nickname: false,
+        password: false,
+        diaryTime: false,
+        [item]: true
+      };
+    });
   };
 
   // 토글 스위치
@@ -157,18 +172,18 @@ function SettingsPage() {
 
   return (
     <>
-    <div className="min-h-screen" style={{ backgroundColor: '#F5F5F0' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       {/* 헤더 */}
-      <div className="relative flex items-center justify-center bg-white" style={{ paddingTop: '16px', paddingBottom: '16px', paddingLeft: '20px', paddingRight: '20px', borderBottom: '1px solid #e0e0e0' }}>
+      <div className="relative flex items-center justify-center" style={{ paddingTop: '16px', paddingBottom: '16px', paddingLeft: '20px', paddingRight: '20px', borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-card)' }}>
         <button
-          className="absolute left-[20px] text-[#333] bg-transparent border-0 cursor-pointer transition-all active:scale-93"
-          style={{ fontSize: '28px', paddingLeft: '8px', paddingRight: '8px', transform: 'translateY(-2px)' }}
+          className="absolute left-[20px] bg-transparent border-0 cursor-pointer transition-all active:scale-93"
+          style={{ fontSize: '20px', paddingLeft: '1px', paddingRight: '8px', transform: 'translateY(-2px)', color: 'var(--color-text-primary)' }}
           onClick={() => navigate(-1)}
           aria-label="뒤로가기"
         >
-          &lt;
+          ←
         </button>
-        <h1 className="text-[#333] font-semibold" style={{ fontSize: '18px', margin: 0 }}>사용자 정보 수정</h1>
+        <h1 className="font-semibold" style={{ fontSize: '18px', margin: 0, color: 'var(--color-text-primary)' }}>사용자 정보 수정</h1>
       </div>
 
       {/* 컨텐츠 */}
@@ -385,7 +400,7 @@ function SettingsPage() {
               </AnimatePresence>
 
               {/* AI 대화 스타일 */}
-              <div className="flex justify-between items-center" style={{ paddingTop: '16px', paddingBottom: '16px' }}>
+              <div className="flex justify-between items-center" style={{ paddingTop: '16px', paddingBottom: '16px', borderBottom: '1px solid #f0f0f0' }}>
                 <span className="text-[#333]" style={{ fontSize: '15px' }}>AI 대화 스타일 (반말)</span>
                 <div
                   onClick={() => handleToggleAiStyle(aiStyle === 'casual' ? 'formal' : 'casual')}
@@ -399,6 +414,29 @@ function SettingsPage() {
                   <div
                     className={`absolute top-[3px] w-[25px] h-[25px] bg-[#FFFFFF] rounded-full transition-all duration-300 ${
                       aiStyle === 'casual' ? "left-[23px]" : "left-[3px]"
+                    }`}
+                    style={{
+                      boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)"
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* 다크모드 */}
+              <div className="flex justify-between items-center" style={{ paddingTop: '16px', paddingBottom: '16px' }}>
+                <span className="text-[#333]" style={{ fontSize: '15px' }}>다크모드</span>
+                <div
+                  onClick={toggleDarkMode}
+                  className={`relative w-[51px] h-[31px] rounded-full cursor-pointer transition-all duration-300 flex-shrink-0 ${
+                    isDarkMode ? "bg-[#a3b899]" : "bg-[#D1D5DB]"
+                  }`}
+                  style={{
+                    boxShadow: "inset 0 1px 3px rgba(0, 0, 0, 0.1)"
+                  }}
+                >
+                  <div
+                    className={`absolute top-[3px] w-[25px] h-[25px] bg-[#FFFFFF] rounded-full transition-all duration-300 ${
+                      isDarkMode ? "left-[23px]" : "left-[3px]"
                     }`}
                     style={{
                       boxShadow: "0 2px 4px rgba(0, 0, 0, 0.2)"
@@ -501,7 +539,6 @@ function SettingsPage() {
         }}
       >
         <div
-          className="bg-[white]"
           style={{
             width: '280px',
             borderRadius: '16px',
@@ -512,7 +549,8 @@ function SettingsPage() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+            backgroundColor: 'var(--color-bg-card)'
           }}
         >
           {!saveSuccess ? (
@@ -534,17 +572,17 @@ function SettingsPage() {
                 style={{
                   width: '60px',
                   height: '60px',
-                  border: '4px solid #f0f0f0',
+                  border: '4px solid var(--color-border)',
                   borderTopColor: '#a3b899',
                   borderRadius: '50%',
                   animation: 'spinner-rotate 0.8s linear infinite',
                   marginBottom: '24px'
                 }}
               />
-              <h3 className="text-[#333] font-semibold text-center" style={{ fontSize: '16px', margin: '0 0 8px 0' }}>
+              <h3 className="font-semibold text-center" style={{ fontSize: '16px', margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>
                 사용자 정보 수정중
               </h3>
-              <p className="text-[#666] text-center" style={{ fontSize: '13px', margin: '0 0 16px 0' }}>
+              <p className="text-center" style={{ fontSize: '13px', margin: '0 0 16px 0', color: 'var(--color-text-secondary)' }}>
                 사용자 정보를 저장하고 있어요
               </p>
               <div style={{ display: 'flex', gap: '6px' }}>
@@ -572,10 +610,10 @@ function SettingsPage() {
                   <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <h3 className="text-[#333] font-semibold text-center" style={{ fontSize: '16px', margin: '0 0 8px 0' }}>
+              <h3 className="font-semibold text-center" style={{ fontSize: '16px', margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>
                 완료
               </h3>
-              <p className="text-[#666] text-center" style={{ fontSize: '13px', margin: '0 0 24px 0' }}>
+              <p className="text-center" style={{ fontSize: '13px', margin: '0 0 24px 0', color: 'var(--color-text-secondary)' }}>
                 사용자 정보가 성공적으로 수정되었어요
               </p>
               <button

@@ -91,8 +91,9 @@ export default function SupportPage() {
         {!showPlaneAnimation && (
           <motion.div
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                       bg-[#F5F5F0] rounded-[24px] w-[90%] max-w-[360px]
+                       rounded-[24px] w-[90%] max-w-[360px]
                        flex flex-col shadow-2xl overflow-hidden"
+            style={{ backgroundColor: 'var(--color-bg-card)' }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
@@ -101,15 +102,16 @@ export default function SupportPage() {
           {/* 헤더 */}
           <div className="px-[16px] pt-[12px] pb-[12px] flex items-start justify-between">
             <div className="text-left">
-              <h2 className="text-[13px] font-semibold text-gray-800">누군가의 그림일기</h2>
-              <p className="text-[11px] text-[#6B6B6B] mt-[2px]">
+              <h2 className="text-[13px] font-semibold" style={{ color: 'var(--color-text-primary)' }}>누군가의 그림일기</h2>
+              <p className="text-[11px] mt-[2px]" style={{ color: 'var(--color-text-secondary)' }}>
                 {randomDiary?.date &&
                   `${randomDiary.date.split("-")[1]}월 ${randomDiary.date.split("-")[2]}일 작성됨`}
               </p>
             </div>
             <button
               onClick={() => navigate(ROUTES.HOME)}
-              className="text-gray-500 hover:text-gray-700 text-[26px] leading-none bg-transparent border-0 -mt-[-2px]"
+              className="text-[26px] leading-none bg-transparent border-0 -mt-[-2px]"
+              style={{ color: 'var(--color-text-secondary)' }}
             >
               ×
             </button>
@@ -117,7 +119,7 @@ export default function SupportPage() {
 
           {/* 그림 + 제목 */}
           <div className="px-[16px] mb-[16px]">
-            <div className="bg-white p-[12px] rounded-xl shadow-sm border border-gray-200">
+            <div className="p-[12px] rounded-xl shadow-sm border" style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)' }}>
               <img
                 src={randomDiary?.image}
                 alt="일기 그림"
@@ -144,7 +146,7 @@ export default function SupportPage() {
           <div className="px-[16px] pb-[20px]">
             {!showMessagePreview ? (
               <>
-                <p className="text-[12px] text-[#6B6B6B] mb-[8px] text-left">
+                <p className="text-[12px] mb-[8px] text-left" style={{ color: 'var(--color-text-secondary)' }}>
                   따뜻한 응원의 메시지를 남겨주세요. (50자 이내)
                 </p>
 
@@ -152,7 +154,12 @@ export default function SupportPage() {
                 <div className="flex items-center gap-[8px]">
                   <input
                     type="text"
-                    className="flex-1 px-[12px] py-[8px] text-sm rounded-[8px] border border-gray-300 focus:outline-none focus:border-gray-400"
+                    className="flex-1 px-[12px] py-[8px] text-sm rounded-[8px] border focus:outline-none"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-bg-card)',
+                      color: 'var(--color-text-primary)'
+                    }}
                     placeholder="익명의 응원 메시지 작성..."
                     value={supportMessage}
                     onChange={(e) =>
@@ -171,8 +178,8 @@ export default function SupportPage() {
               <>
                 {/* 미리보기 */}
                 <div className="mb-[12px]">
-                  <p className="text-[13px] text-gray-700 mb-[4px]">{supportMessage}</p>
-                  <p className="text-[11px] text-[#6B6B6B]">- 익명의 집사로부터</p>
+                  <p className="text-[13px] mb-[4px]" style={{ color: 'var(--color-text-primary)' }}>{supportMessage}</p>
+                  <p className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>- 익명의 집사로부터</p>
                 </div>
 
                 <div className="flex justify-end gap-[8px]">
@@ -215,20 +222,20 @@ export default function SupportPage() {
             initial={{
               x: 0,
               y: 0,
-              opacity: 0,
+              opacity: 1,
               scale: 0.3,
               rotate: -30
             }}
             animate={{
               x: [0, -600, 400],
               y: [0, -100, -500],
-              opacity: [0, 1, 1, 0],
-              scale: [0.3, 1, 1.2, 1],
+              opacity: [1, 1, 1, 1, 0],
+              scale: [0.3, 1, 1.2, 1.2, 1],
               rotate: [-30, -10, 45]
             }}
             transition={{
               duration: 2,
-              times: [0, 0.4, 0.7, 1],
+              times: [0, 0.3, 0.6, 0.9, 1],
               ease: 'easeInOut'
             }}
           >
@@ -239,7 +246,6 @@ export default function SupportPage() {
               style={{
                 width: '80px',
                 height: '80px',
-                filter: 'brightness(2.5)',
               }}
             />
           </motion.div>

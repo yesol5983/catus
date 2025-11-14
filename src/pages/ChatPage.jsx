@@ -117,7 +117,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fef9f1]">
+    <div className="fixed inset-0" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       <style>{`
         @keyframes typingDot {
           0%, 60%, 100% {
@@ -329,7 +329,7 @@ export default function ChatPage() {
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isAITyping}
               className="text-[white] text-sm font-medium hover:opacity-90 transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed border-0"
-              style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '11px', paddingBottom: '11px', backgroundColor: '#000000', borderRadius: '12px',opacity: 1, }}
+              style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '11px', paddingBottom: '11px', backgroundColor: '#000000', borderRadius: '12px', opacity: 1, whiteSpace: 'nowrap', minWidth: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               전송
             </button>

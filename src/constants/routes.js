@@ -9,6 +9,7 @@ export const ROUTES = {
   CALENDAR: "/calendar",
   DIARY: "/diary",
   DIARY_DETAIL: "/diary/:date",
+  DIARY_REVEAL: "/diary-reveal/:date",
   SETTINGS: "/settings",
   SUPPORT: "/support",
   LETTER: "/letter"

@@ -220,11 +220,11 @@ export default function Onboarding() {
 
 
   return (
-    <div className="relative w-full h-screen bg-[#fef9f1] flex flex-col overflow-hidden">
+    <div className="relative w-full h-screen bg-main-bg flex flex-col overflow-hidden">
       {/* 상단 진행도 */}
-      <div className="w-full flex flex-col items-center pt-[10px] pb-4 bg-[#fef9f1] sticky top-0 z-30">
+      <div className="w-full flex flex-col items-center pt-[10px] pb-4 bg-main-bg sticky top-0 z-30">
         {/* 진행도 바 (80% 중앙) */}
-        <div className="relative w-[80%] h-[8px] bg-gray-200 rounded-full mb-2">
+        <div className="relative w-[80%] h-[8px] rounded-full mb-2" style={{ backgroundColor: 'var(--color-border)' }}>
           <motion.div
             className="absolute top-0 left-0 h-full bg-[#59B464] rounded-full"
             animate={{ width: `${progress}%` }}
@@ -240,7 +240,7 @@ export default function Onboarding() {
         </div>
 
         {/* 진행 단계 텍스트 */}
-        <p className="text-sm sm:text-base text-gray-700 font-medium text-center">
+        <p className="text-sm sm:text-base font-medium text-center" style={{ color: 'var(--color-text-primary)' }}>
           Step {step + 1}/4 - 달이에게 당신을 알려주세요
         </p>
       </div>
@@ -373,8 +373,8 @@ export default function Onboarding() {
       </div>
 
       {/* 하단 */}
-      <div className="w-full text-center py-[15px] bg-[#fef9f1]">
-        <button onClick={handleSkip} className="text-gray-700 text-sm sm:text-base hover:text-black transition-colors bg-transparent border-none outline-none">
+      <div className="w-full text-center py-[15px] bg-main-bg">
+        <button onClick={handleSkip} className="text-sm sm:text-base transition-colors bg-transparent border-none outline-none" style={{ color: 'var(--color-text-primary)' }}>
           건너뛰기
         </button>
       </div>
@@ -387,7 +387,7 @@ export default function Onboarding() {
           width: 100%;
           height: 100%;
           overflow-x: hidden;
-          background: #fef9f1;
+          background: var(--color-main-bg);
         }
         .bubble-left {
           position: relative;

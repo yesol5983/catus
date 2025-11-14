@@ -8,6 +8,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif']
+      },
+      colors: {
+        'main-bg': '#fef9f1',
       }
     },
   },

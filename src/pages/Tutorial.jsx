@@ -88,7 +88,7 @@ function Tutorial({ onComplete }) {
 
     const position = currentTutorial.position;
     const padding = 24; // 버튼과 말풍선 사이 간격
-    const messageWidth = 180; // maxWidth
+    const messageWidth = 240; // maxWidth
     let arrowPosition = null;
     let arrowLeft = null; // 화살표의 left 위치
     let messageLeft = null; // 말풍선의 left 위치 (픽셀 값)
@@ -114,22 +114,19 @@ function Tutorial({ onComplete }) {
         break;
       case 'bottom':
         // 말풍선이 타겟 아래에 위치 (톱니바퀴)
-        // 버튼이 화면 오른쪽에 있으면 말풍선을 더 왼쪽으로 이동
-        const isRightSide = targetCenterX > window.innerWidth * 0.7;
-        if (isRightSide) {
-          // 화면 오른쪽에서 충분한 여백을 두고 배치
-          messageLeft = window.innerWidth - messageWidth - 60;
-        } else {
-          messageLeft = Math.max(20, Math.min(window.innerWidth - messageWidth - 20, targetCenterX - messageWidth / 2));
-        }
+        // 화면 오른쪽에서 20px 여백을 두고 배치
+        messageLeft = window.innerWidth - messageWidth - 20;
 
         style = {
           top: `${targetRect.top + targetRect.height + padding}px`,
           left: `${messageLeft}px`
         };
         arrowPosition = 'top';
-        // 화살표는 버튼 중심을 가리킴 (오른쪽에 있으면 추가로 이동)
-        arrowLeft = `${targetCenterX - messageLeft + (isRightSide ? 15 : 0)}px`;
+        // 화살표는 버튼 중심을 가리키되, 말풍선 안에 위치하도록 제한
+        const arrowOffset = targetCenterX - messageLeft;
+        const minArrow = 30; // 왼쪽 끝에서 최소 거리
+        const maxArrow = messageWidth - 30; // 오른쪽 끝에서 최소 거리
+        arrowLeft = `${Math.max(minArrow, Math.min(maxArrow, arrowOffset))}px`;
         break;
       case 'center':
       default:
@@ -222,7 +219,7 @@ function Tutorial({ onComplete }) {
           style={{
             ...messageStyle,
             position: 'absolute',
-            maxWidth: '280px',
+            maxWidth: '240px',
             pointerEvents: 'all',
             zIndex: 10001
           }}
@@ -233,7 +230,7 @@ function Tutorial({ onComplete }) {
               position: 'relative',
               background: 'white',
               borderRadius: '16px',
-              padding: '20px',
+              padding: '13px',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
               textAlign: 'center'
             }}
@@ -246,20 +243,20 @@ function Tutorial({ onComplete }) {
                   width: 0,
                   height: 0,
                   ...(arrowPosition === 'top' && {
-                    top: '-8px',
+                    top: '-7px',
                     left: arrowLeft || '50%',
                     transform: 'translateX(-50%)',
-                    borderLeft: '8px solid transparent',
-                    borderRight: '8px solid transparent',
-                    borderBottom: '8px solid white'
+                    borderLeft: '9px solid transparent',
+                    borderRight: '9px solid transparent',
+                    borderBottom: '9px solid white'
                   }),
                   ...(arrowPosition === 'bottom' && {
-                    bottom: '-8px',
+                    bottom: '-7px',
                     left: arrowLeft || '50%',
                     transform: 'translateX(-50%)',
-                    borderLeft: '8px solid transparent',
-                    borderRight: '8px solid transparent',
-                    borderTop: '8px solid white'
+                    borderLeft: '9px solid transparent',
+                    borderRight: '9px solid transparent',
+                    borderTop: '9px solid white'
                   })
                 }}
               />
@@ -268,10 +265,10 @@ function Tutorial({ onComplete }) {
             {/* 메시지 텍스트 */}
             <p
               style={{
-                fontSize: '14px',
-                lineHeight: '1.6',
+                fontSize: '16px',
+                lineHeight: '1.5',
                 color: '#333',
-                marginBottom: '16px',
+                marginBottom: '12px',
                 whiteSpace: 'pre-line'
               }}
             >
@@ -283,7 +280,7 @@ function Tutorial({ onComplete }) {
               onClick={handleNext}
               style={{
                 width: '100%',
-                padding: '10px 16px',
+                padding: '8px 12px',
                 background: 'transparent',
                 border: 'none',
                 color: '#666',
