@@ -64,45 +64,79 @@ export const clear = () => {
 };
 
 /**
- * 토큰 저장
+ * 토큰 저장 (문자열 그대로 저장)
  */
 export const setToken = (token) => {
-  return setItem('auth_token', token);
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}access_token`, token);
+    return true;
+  } catch (error) {
+    console.error('setToken error:', error);
+    return false;
+  }
 };
 
 /**
- * 토큰 조회
+ * 토큰 조회 (문자열 그대로 반환)
  */
 export const getToken = () => {
-  return getItem('auth_token');
+  try {
+    return localStorage.getItem(`${STORAGE_PREFIX}access_token`);
+  } catch (error) {
+    console.error('getToken error:', error);
+    return null;
+  }
 };
 
 /**
  * 토큰 삭제
  */
 export const removeToken = () => {
-  return removeItem('auth_token');
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}access_token`);
+    return true;
+  } catch (error) {
+    console.error('removeToken error:', error);
+    return false;
+  }
 };
 
 /**
- * Refresh 토큰 저장
+ * Refresh 토큰 저장 (문자열 그대로 저장)
  */
 export const setRefreshToken = (token) => {
-  return setItem('refresh_token', token);
+  try {
+    localStorage.setItem(`${STORAGE_PREFIX}refresh_token`, token);
+    return true;
+  } catch (error) {
+    console.error('setRefreshToken error:', error);
+    return false;
+  }
 };
 
 /**
- * Refresh 토큰 조회
+ * Refresh 토큰 조회 (문자열 그대로 반환)
  */
 export const getRefreshToken = () => {
-  return getItem('refresh_token');
+  try {
+    return localStorage.getItem(`${STORAGE_PREFIX}refresh_token`);
+  } catch (error) {
+    console.error('getRefreshToken error:', error);
+    return null;
+  }
 };
 
 /**
  * Refresh 토큰 삭제
  */
 export const removeRefreshToken = () => {
-  return removeItem('refresh_token');
+  try {
+    localStorage.removeItem(`${STORAGE_PREFIX}refresh_token`);
+    return true;
+  } catch (error) {
+    console.error('removeRefreshToken error:', error);
+    return false;
+  }
 };
 
 /**

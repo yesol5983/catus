@@ -7,8 +7,10 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleKakaoLogin = () => {
+    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${import.meta.env.VITE_KAKAO_REST_API_KEY}&redirect_uri=${import.meta.env.VITE_KAKAO_REDIRECT_URI}&response_type=code`;
+
     console.log('카카오 로그인 시작');
-    navigate('/onboarding');
+    window.location.href = KAKAO_AUTH_URL;
   };
 
   return (
