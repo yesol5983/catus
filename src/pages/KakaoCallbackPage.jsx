@@ -10,7 +10,13 @@ export default function KakaoCallbackPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    let executed = false;
+
     const handleKakaoCallback = async () => {
+      // React StrictMode 중복 실행 방지
+      if (executed) return;
+      executed = true;
+
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
 
@@ -18,7 +24,7 @@ export default function KakaoCallbackPage() {
       if (errorParam) {
         console.error('Kakao login error:', errorParam);
         setError('로그인이 취소되었습니다.');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/'), 2000);
         return;
       }
 
@@ -26,7 +32,7 @@ export default function KakaoCallbackPage() {
       if (!code) {
         console.error('No authorization code received');
         setError('인증 코드를 받지 못했습니다.');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/'), 2000);
         return;
       }
 
@@ -49,16 +55,16 @@ export default function KakaoCallbackPage() {
         // 사용자 정보 저장
         login(user);
 
-        // 신규 사용자면 온보딩, 기존 사용자면 메인으로
+        // 신규 사용자면 온보딩, 기존 사용자면 홈으로
         if (isNewUser) {
           navigate('/onboarding');
         } else {
-          navigate('/');
+          navigate('/home');
         }
       } catch (error) {
         console.error('Login failed:', error);
         setError('로그인에 실패했습니다. 다시 시도해주세요.');
-        setTimeout(() => navigate('/login'), 2000);
+        setTimeout(() => navigate('/'), 2000);
       }
     };
 
