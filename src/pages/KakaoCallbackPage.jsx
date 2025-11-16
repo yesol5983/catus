@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -8,14 +8,13 @@ export default function KakaoCallbackPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [error, setError] = useState(null);
+  const executed = useRef(false);
 
   useEffect(() => {
-    let executed = false;
-
     const handleKakaoCallback = async () => {
-      // React StrictMode 중복 실행 방지
-      if (executed) return;
-      executed = true;
+      // React StrictMode 중복 실행 방지 - useRef 사용
+      if (executed.current) return;
+      executed.current = true;
 
       const code = searchParams.get('code');
       const errorParam = searchParams.get('error');
