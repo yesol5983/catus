@@ -5,11 +5,14 @@ import { Button } from "../components/common";
 import { ROUTES } from "../constants/routes";
 import { EMOTION_COLORS, EMOTION_EMOJIS } from "../constants/emotionColors";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useAuth } from "../contexts/AuthContext";
+import axios from "axios";
 import HomePage from "./HomePage";
 import catProfile from "../assets/images/cat-profile.png";
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const todayKey = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const [messages, setMessages] = useLocalStorage(`chat_messages_${todayKey}`, []);
   const [inputValue, setInputValue] = useState("");
@@ -57,7 +60,7 @@ export default function ChatPage() {
   }, [messages, isAITyping]);
 
   // 메시지 전송
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim() || isAITyping) return;
 
     const userMessage = {
@@ -66,33 +69,50 @@ export default function ChatPage() {
       text: inputValue,
       timestamp: new Date().toISOString(),
     };
-    console.log("User message:", userMessage);
-    setMessages((prev) => {
-      const newMessages = [...prev, userMessage];
-      console.log("All messages:", newMessages);
-      return newMessages;
-    });
+
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsAITyping(true);
 
-    setTimeout(() => {
-      const responses = [
-        "그랬구나! 더 자세히 말해줄 수 있어?",
-        "정말 흥미로운 이야기네. 그때 기분이 어땠어?",
-        "잘 들었어. 다른 일은 없었어?",
-        "그 상황에서 어떻게 대처했어?",
-        "충분히 그럴 수 있어. 지금은 기분이 좀 어때?",
-        "이해해. 힘들었겠다. 괜찮아?",
-        "좋은 일이네! 기분이 좋았겠어.",
-        "그런 일이 있었구나. 내가 더 들어줄게.",
-      ];
-      const ai = responses[Math.floor(Math.random() * responses.length)];
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now() + 1, type: "ai", text: ai, timestamp: new Date().toISOString() },
-      ]);
+    try {
+      // 백엔드 API 호출
+      const token = localStorage.getItem('catus_access_token');
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_BASE_URL}/chat/messages`,
+        {
+          message: userMessage.text,
+          date: todayKey
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      // AI 응답 추가
+      const aiMessage = {
+        id: Date.now() + 1,
+        type: "ai",
+        text: response.data.aiMessage.content,
+        timestamp: response.data.aiMessage.createdAt,
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+
+      // 에러 발생 시 사용자에게 알림
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: "ai",
+        text: "미안해, 지금 답변을 할 수 없어. 잠시 후 다시 시도해줄래?",
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
       setIsAITyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   // 닫기
