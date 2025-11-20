@@ -11,7 +11,6 @@ import CalendarPage from './pages/CalendarPage';
 import SupportPage from './pages/SupportPage';
 import LetterPage from './pages/LetterPage';
 import DiaryDetailPage from './pages/DiaryDetailPage';
-import DiaryDetailPage2 from './pages/DiaryDetailPage2';
 import DiaryRevealPage from './pages/DiaryRevealPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -28,7 +27,6 @@ function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/diary-reveal/:date" element={<DiaryRevealPage />} />
-            <Route path="/diary2/:date" element={<DiaryDetailPage2 />} />
             <Route path="/diary/:date" element={<DiaryDetailPage />} />
             <Route path="/support" element={<SupportPage />} />
             <Route path="/letter" element={<LetterPage />} />
