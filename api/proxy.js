@@ -66,10 +66,17 @@ module.exports = async (req, res) => {
     // 응답 전달
     res.status(response.status).send(response.data);
   } catch (error) {
-    console.error('Proxy error:', error.message);
+    console.error('Proxy error:', {
+      message: error.message,
+      stack: error.stack,
+      url: req.url,
+      method: req.method,
+      body: req.body
+    });
     res.status(500).json({
       error: 'Proxy Error',
-      message: error.message
+      message: error.message,
+      details: error.stack
     });
   }
 };
