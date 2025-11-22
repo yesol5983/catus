@@ -31,8 +31,17 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // /api/proxy 경로 제거하고 백엔드로 프록시 요청
-    const path = req.url.replace(/^\/api\/proxy/, '') || '/';
+    // Query string 파싱
+    const url = new URL(req.url, `https://${req.headers.host}`);
+
+    // /api/proxy 경로 제거
+    let path = url.pathname.replace(/^\/api\/proxy/, '') || '/';
+
+    // Query string 추가
+    if (url.search) {
+      path += url.search;
+    }
+
     const targetUrl = `${BACKEND_URL}${path}`;
 
     console.log(`Proxying: ${req.method} ${req.url} -> ${targetUrl}`);
@@ -41,7 +50,7 @@ module.exports = async (req, res) => {
       method: req.method,
       url: targetUrl,
       headers: {
-        'content-type': req.headers['content-type'],
+        'content-type': req.headers['content-type'] || 'application/json',
         'authorization': req.headers['authorization'],
       },
       data: req.body,
