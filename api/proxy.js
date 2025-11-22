@@ -31,15 +31,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // 백엔드로 프록시 요청
-    const targetUrl = `${BACKEND_URL}${req.url}`;
+    // /api/proxy 경로 제거하고 백엔드로 프록시 요청
+    const path = req.url.replace(/^\/api\/proxy/, '') || '/';
+    const targetUrl = `${BACKEND_URL}${path}`;
+
+    console.log(`Proxying: ${req.method} ${req.url} -> ${targetUrl}`);
 
     const response = await axios({
       method: req.method,
       url: targetUrl,
       headers: {
-        ...req.headers,
-        host: '34.158.193.95',
+        'content-type': req.headers['content-type'],
+        'authorization': req.headers['authorization'],
       },
       data: req.body,
       httpsAgent, // ⚠️ SSL 검증 우회
