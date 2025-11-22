@@ -4,8 +4,8 @@
  * TODO: 백엔드 SSL 인증서 설정 후 제거 필요
  */
 
-const https = require('https');
-const axios = require('axios');
+import https from 'https';
+import axios from 'axios';
 
 const BACKEND_URL = 'https://34.158.193.95/api';
 
@@ -14,7 +14,7 @@ const httpsAgent = new https.Agent({
   rejectUnauthorized: false
 });
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // CORS 헤더 설정
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
@@ -79,4 +79,4 @@ module.exports = async (req, res) => {
       details: error.stack
     });
   }
-};
+}
