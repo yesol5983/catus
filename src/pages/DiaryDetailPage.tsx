@@ -1,18 +1,23 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { ROUTES } from '../constants/routes';
-import { EMOTION_COLORS, EMOTION_EMOJIS } from '../constants/emotionColors';
 import { diaryApi } from '../utils/api';
-import { formatDate, getRelativeTime } from '../utils/dateFormat';
-import type { Diary, ChatMessage } from '../types';
+import { formatDate } from '../utils/dateFormat';
+import type { Diary } from '../types';
 import HomePage from './HomePage';
 
 export default function DiaryDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const diaryId = id ? parseInt(id, 10) : null;
+  const queryClient = useQueryClient();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
+  const [editedContent, setEditedContent] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // Browser back button handling for modal
   useEffect(() => {
@@ -44,6 +49,68 @@ export default function DiaryDetailPage() {
   });
 
   const diary: Diary | undefined = diaryData;
+
+  // 일기 데이터 로드 시 편집 폼 초기화
+  useEffect(() => {
+    if (diary) {
+      setEditedTitle(diary.title || '');
+      setEditedContent(diary.content || '');
+    }
+  }, [diary]);
+
+  // 일기 수정 Mutation (백엔드: PUT /api/diary/{id})
+  const updateMutation = useMutation({
+    mutationFn: async () => {
+      if (!diaryId) throw new Error('일기 ID가 필요합니다.');
+      return await diaryApi.update(diaryId, {
+        title: editedTitle,
+        content: editedContent,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diary', 'detail', diaryId] });
+      queryClient.invalidateQueries({ queryKey: ['diary', 'list'] });
+      setIsEditing(false);
+      alert('일기가 수정되었습니다.');
+    },
+    onError: (error: any) => {
+      console.error('일기 수정 실패:', error);
+      alert(`일기 수정에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    },
+  });
+
+  // 일기 삭제 Mutation (백엔드: DELETE /api/diary/{id})
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!diaryId) throw new Error('일기 ID가 필요합니다.');
+      return await diaryApi.delete(diaryId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['diary', 'list'] });
+      alert('일기가 삭제되었습니다.');
+      navigate(ROUTES.CALENDAR);
+    },
+    onError: (error: any) => {
+      console.error('일기 삭제 실패:', error);
+      alert(`일기 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+    },
+  });
+
+  const handleUpdate = () => {
+    if (!editedTitle.trim() || !editedContent.trim()) {
+      alert('제목과 내용을 모두 입력해주세요.');
+      return;
+    }
+    updateMutation.mutate();
+  };
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    deleteMutation.mutate();
+  };
 
   // Loading state
   if (isLoading) {
@@ -153,29 +220,60 @@ export default function DiaryDetailPage() {
             )}
 
             {/* Title */}
-            {diary.title && (
+            {isEditing ? (
               <div className="bg-white rounded-2xl p-5 shadow-md">
                 <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                   <span>📝</span>
                   <span>제목</span>
                 </h3>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {diary.title}
-                </p>
+                <input
+                  type="text"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52]"
+                  placeholder="제목을 입력하세요"
+                />
               </div>
+            ) : (
+              diary.title && (
+                <div className="bg-white rounded-2xl p-5 shadow-md">
+                  <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <span>📝</span>
+                    <span>제목</span>
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {diary.title}
+                  </p>
+                </div>
+              )
             )}
 
             {/* Content (백엔드 필드: content) */}
-            {diary.content && (
+            {isEditing ? (
               <div className="bg-white rounded-2xl p-5 shadow-md">
                 <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
                   <span>💬</span>
                   <span>전체 내용</span>
                 </h3>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {diary.content}
-                </p>
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52] min-h-[200px]"
+                  placeholder="내용을 입력하세요"
+                />
               </div>
+            ) : (
+              diary.content && (
+                <div className="bg-white rounded-2xl p-5 shadow-md">
+                  <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                    <span>💬</span>
+                    <span>전체 내용</span>
+                  </h3>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {diary.content}
+                  </p>
+                </div>
+              )
             )}
 
             {/* Big5 Scores (백엔드 응답에 포함될 수 있음) */}
@@ -217,21 +315,84 @@ export default function DiaryDetailPage() {
           </div>
 
           {/* Footer Actions */}
-          <div className="bg-[#F5F5F0] p-4 flex gap-3">
-            <button
-              onClick={() => navigate(ROUTES.CALENDAR)}
-              className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
-            >
-              캘린더로
-            </button>
-            <button
-              onClick={() => navigate(ROUTES.HOME)}
-              className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
-            >
-              홈으로
-            </button>
+          <div className="bg-[#F5F5F0] p-4 space-y-3">
+            {isEditing ? (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsEditing(false)}
+                  disabled={updateMutation.isPending}
+                  className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleUpdate}
+                  disabled={updateMutation.isPending}
+                  className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {updateMutation.isPending ? '저장 중...' : '저장'}
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    수정
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleteMutation.isPending}
+                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => navigate(ROUTES.CALENDAR)}
+                    className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
+                  >
+                    캘린더로
+                  </button>
+                  <button
+                    onClick={() => navigate(ROUTES.HOME)}
+                    className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    홈으로
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </motion.div>
+
+        {/* 삭제 확인 모달 */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
+            <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
+              <h3 className="text-xl font-bold mb-4 text-gray-800">일기 삭제</h3>
+              <p className="text-gray-600 mb-6">정말로 이 일기를 삭제하시겠습니까? 삭제된 일기는 복구할 수 없습니다.</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? '삭제 중...' : '삭제'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

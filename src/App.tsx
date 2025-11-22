@@ -11,9 +11,12 @@ import Onboarding from "./pages/Onboarding";
 import HomePage from './pages/HomePage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import ChatPage from './pages/ChatPage';
+import ChatAnalysisPage from './pages/ChatAnalysisPage';
+import ChatDatePage from './pages/ChatDatePage';
 import CalendarPage from './pages/CalendarPage';
 import SupportPage from './pages/SupportPage';
 import LetterPage from './pages/LetterPage';
+import MessagesPage from './pages/MessagesPage';
 import DiaryDetailPage from './pages/DiaryDetailPage';
 import DiaryDetailPage2 from './pages/DiaryDetailPage2';
 import DiaryRevealPage from './pages/DiaryRevealPage';
@@ -40,12 +43,15 @@ function App() {
                 <Route path="/onboarding/flow" element={<PrivateRoute><Onboarding /></PrivateRoute>} />
                 <Route path="/home" element={<PrivateRoute><HomePage /></PrivateRoute>} />
                 <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
+                <Route path="/chat/analysis" element={<PrivateRoute><ChatAnalysisPage /></PrivateRoute>} />
+                <Route path="/chat/:date" element={<PrivateRoute><ChatDatePage /></PrivateRoute>} />
                 <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
                 <Route path="/diary-reveal/:date" element={<PrivateRoute><DiaryRevealPage /></PrivateRoute>} />
                 <Route path="/diary2/:date" element={<PrivateRoute><DiaryDetailPage2 /></PrivateRoute>} />
                 <Route path="/diary/:date" element={<PrivateRoute><DiaryDetailPage /></PrivateRoute>} />
                 <Route path="/support" element={<PrivateRoute><SupportPage /></PrivateRoute>} />
                 <Route path="/letter" element={<PrivateRoute><LetterPage /></PrivateRoute>} />
+                <Route path="/messages" element={<PrivateRoute><MessagesPage /></PrivateRoute>} />
                 <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
                 <Route path="/random-diary" element={<PrivateRoute><RandomDiaryPage /></PrivateRoute>} />
                 <Route path="/big5/stats" element={<PrivateRoute><Big5StatsPage /></PrivateRoute>} />
