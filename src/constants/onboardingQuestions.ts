@@ -6,31 +6,25 @@ interface OnboardingQuestion {
   placeholder?: string;
 }
 
-// 온보딩 질문 (PDF 명세 기준)
+// 온보딩 질문 (백엔드 API 명세 기준: /api/auth/signup)
 export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
   {
     id: 1,
-    question: "성별을 알려주세요",
-    type: "selection",
-    options: ["여자", "남자", "선택 안함"]
+    question: "닉네임을 입력해주세요",
+    type: "text",
+    placeholder: "귀여운고양이123"
   },
   {
     id: 2,
-    question: "연령대를 선택해주세요",
-    type: "selection",
-    options: ["10대", "20대", "30대", "40대 이상"]
+    question: "비밀번호를 설정해주세요",
+    type: "text",
+    placeholder: "8자 이상의 비밀번호"
   },
   {
     id: 3,
-    question: "현재 직업은?",
+    question: "일기를 받고 싶은 시간을 선택해주세요",
     type: "selection",
-    options: ["학생", "직장인", "기타"]
-  },
-  {
-    id: 4,
-    question: "이 서비스를 사용하는 목적을 알려주세요",
-    type: "text",
-    placeholder: "일기 기록용, 힐링용, 재미있어 보여서 등..."
+    options: ["21:00", "22:00", "23:00", "00:00"]
   }
 ];
 

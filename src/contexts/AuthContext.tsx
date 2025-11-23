@@ -46,21 +46,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (accessToken && storedUserStr) {
         try {
-          // 토큰이 유효한지 확인
-          const response = await axios.get<User>(
-            `${import.meta.env.VITE_API_BASE_URL}/auth/me`,
-            {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            }
-          );
+          // localStorage의 사용자 정보를 먼저 복원 (즉시 인증 상태 설정)
+          const storedUser = JSON.parse(storedUserStr);
+          setUser(storedUser);
 
-          // 서버에서 받은 최신 사용자 정보로 업데이트
-          const userData = response.data;
-          setUser(userData);
-          localStorage.setItem('catus_user', JSON.stringify(userData));
+          // 백그라운드에서 토큰 유효성 검증 (선택적)
+          // /auth/me 엔드포인트가 없을 수 있으므로 실패해도 무시
+          try {
+            const response = await axios.get<User>(
+              `${import.meta.env.VITE_API_BASE_URL}/auth/me`,
+              {
+                headers: { Authorization: `Bearer ${accessToken}` }
+              }
+            );
+
+            // 서버에서 받은 최신 사용자 정보로 업데이트
+            const userData = response.data;
+            setUser(userData);
+            localStorage.setItem('catus_user', JSON.stringify(userData));
+          } catch (error) {
+            // /auth/me 실패는 무시 (localStorage의 사용자 정보 유지)
+            console.warn('Background token validation failed (continuing with cached user):', error);
+          }
         } catch (error) {
-          console.error('Token validation failed:', error);
-          // 토큰이 만료되었으면 모든 토큰 제거하고 로그아웃 (무한 루프 방지)
+          console.error('Failed to parse stored user:', error);
+          // localStorage 파싱 실패 시 로그아웃
           removeToken();
           localStorage.removeItem('catus_refresh_token');
           localStorage.removeItem('catus_user');

@@ -8,35 +8,29 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { big5Api } from '../utils/api';
 import { ROUTES } from '../constants/routes';
-
-// BIG5 초기 검사 문항
-const BIG5_QUESTIONS = [
-  { id: 1, text: '나는 새로운 사람을 만나는 것을 즐긴다', trait: 'openness' },
-  { id: 2, text: '나는 계획을 세우고 그대로 실행하는 편이다', trait: 'conscientiousness' },
-  { id: 3, text: '나는 사교적이고 활발한 편이다', trait: 'extraversion' },
-  { id: 4, text: '나는 다른 사람의 기분을 잘 이해한다', trait: 'agreeableness' },
-  { id: 5, text: '나는 걱정이 많은 편이다', trait: 'neuroticism' },
-  { id: 6, text: '나는 예술적이고 창의적인 활동을 좋아한다', trait: 'openness' },
-  { id: 7, text: '나는 책임감이 강하고 신뢰할 수 있는 사람이다', trait: 'conscientiousness' },
-  { id: 8, text: '나는 혼자 있는 것보다 사람들과 함께 있는 것을 선호한다', trait: 'extraversion' },
-  { id: 9, text: '나는 타인에게 친절하고 배려심이 많다', trait: 'agreeableness' },
-  { id: 10, text: '나는 스트레스를 받으면 쉽게 불안해진다', trait: 'neuroticism' },
-];
+import { BIG5_QUESTIONS, SCORE_OPTIONS } from '../constants/big5Questions';
 
 export default function Big5TestPage() {
   const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
+  const [answers, setAnswers] = useState<Array<{ questionId: number; score: number }>>([]);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
 
   const submitTestMutation = useMutation({
-    mutationFn: (answers: number[]) => big5Api.submitInitial(answers),
-    onSuccess: () => {
-      navigate(ROUTES.BIG5_STATS);
+    mutationFn: (answers: Array<{ questionId: number; score: number }>) =>
+      big5Api.submitInitial(answers),
+    onSuccess: (data) => {
+      console.log('✅ Big5 테스트 제출 성공:', data);
+
+      // 로컬 스토리지에 Big5 완료 표시
+      localStorage.setItem('catus_big5_completed', 'true');
+
+      // 홈으로 이동
+      navigate(ROUTES.HOME);
     },
-    onError: (error) => {
-      console.error('Failed to submit BIG5 test:', error);
-      alert('테스트 제출에 실패했습니다. 다시 시도해주세요.');
+    onError: (error: any) => {
+      console.error('❌ Big5 테스트 제출 실패:', error);
+      alert(error.message || '테스트 제출에 실패했습니다. 다시 시도해주세요.');
     },
   });
 
@@ -47,7 +41,15 @@ export default function Big5TestPage() {
   const handleNext = () => {
     if (selectedAnswer === null) return;
 
-    const newAnswers = [...answers, selectedAnswer];
+    const currentQ = BIG5_QUESTIONS[currentQuestion];
+
+    // 역문항이면 점수 반전 (6 - score)
+    const finalScore = currentQ.reverse ? 6 - selectedAnswer : selectedAnswer;
+
+    const newAnswers = [
+      ...answers,
+      { questionId: currentQ.id, score: finalScore }
+    ];
     setAnswers(newAnswers);
 
     if (currentQuestion < BIG5_QUESTIONS.length - 1) {
@@ -65,18 +67,30 @@ export default function Big5TestPage() {
       const newAnswers = [...answers];
       const previousAnswer = newAnswers.pop();
       setAnswers(newAnswers);
-      setSelectedAnswer(previousAnswer ?? null);
+
+      // 이전 답변 복원 (역문항이면 다시 반전)
+      if (previousAnswer) {
+        const prevQ = BIG5_QUESTIONS[currentQuestion - 1];
+        const originalScore = prevQ.reverse ? 6 - previousAnswer.score : previousAnswer.score;
+        setSelectedAnswer(originalScore);
+      }
     }
   };
 
   const progress = ((currentQuestion + 1) / BIG5_QUESTIONS.length) * 100;
+  const currentQ = BIG5_QUESTIONS[currentQuestion];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3] flex flex-col">
       {/* 헤더 */}
       <div className="bg-white shadow-sm">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-lg font-semibold text-gray-800 text-center">BIG5 성격 검사</h1>
+          <h1 className="text-lg font-semibold text-gray-800 text-center">
+            🧠 BIG5 성격 검사
+          </h1>
+          <p className="text-sm text-gray-500 text-center mt-1">
+            당신의 성격을 분석하고 맞춤 일기를 만들어드려요
+          </p>
         </div>
       </div>
 
@@ -103,18 +117,12 @@ export default function Big5TestPage() {
         <div className="max-w-2xl w-full">
           <div className="bg-white rounded-2xl p-8 shadow-md">
             <p className="text-xl text-gray-800 text-center mb-8 leading-relaxed">
-              {BIG5_QUESTIONS[currentQuestion].text}
+              {currentQ.text}
             </p>
 
             {/* 답변 선택 */}
             <div className="space-y-3">
-              {[
-                { value: 1, label: '전혀 아니다' },
-                { value: 2, label: '아니다' },
-                { value: 3, label: '보통이다' },
-                { value: 4, label: '그렇다' },
-                { value: 5, label: '매우 그렇다' },
-              ].map((option) => (
+              {SCORE_OPTIONS.map((option) => (
                 <button
                   key={option.value}
                   onClick={() => handleAnswerSelect(option.value)}
@@ -141,7 +149,8 @@ export default function Big5TestPage() {
             {currentQuestion > 0 && (
               <button
                 onClick={handlePrevious}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors"
+                disabled={submitTestMutation.isPending}
+                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 이전
               </button>
@@ -158,6 +167,15 @@ export default function Big5TestPage() {
                 : '완료'}
             </button>
           </div>
+
+          {/* 도움말 */}
+          {currentQuestion === 0 && (
+            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <p className="text-sm text-blue-800 text-center">
+                💡 솔직하게 답변할수록 더 정확한 분석이 가능해요
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

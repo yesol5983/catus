@@ -1,0 +1,37 @@
+=== 구현된 기능별 API 호출 검증 ===
+
+1. DiaryDetailPage - 일기 수정
+   - API: PUT /api/diary/{id}
+   - Request Body: { title: string, content: string }
+   - 구현: diaryApi.update(diaryId, { title: editedTitle, content: editedContent })
+   - 상태: ✅ CORRECT
+
+2. DiaryDetailPage - 일기 삭제
+   - API: DELETE /api/diary/{id}
+   - Request Body: (없음)
+   - 구현: diaryApi.delete(diaryId)
+   - 상태: ✅ CORRECT
+
+3. MessagesPage - 메시지 조회
+   - API: GET /api/message/received?page=0&size=20
+   - 구현: messageApi.getReceived()
+   - 상태: ✅ CORRECT
+
+4. MessagesPage - 읽음 처리
+   - API: PUT /api/message/read/{id}
+   - 구현: messageApi.markAsRead(messageId)
+   - 상태: ✅ CORRECT
+
+5. ChatAnalysisPage - 채팅 분석
+   - API: POST /api/chat/analyze
+   - Request Body: { startDate: string, endDate: string }
+   - 구현: chatApi.analyzeChat(startDate, endDate)
+   - 상태: ✅ CORRECT (수정 완료)
+
+=== 미구현/문제점 ===
+
+6. 특정 날짜 채팅 조회
+   - API: GET /api/chat/context/{date}
+   - 라우트: ✅ 추가됨 (/chat/:date)
+   - 페이지: ❌ 없음 (ChatDatePage 컴포넌트 미생성)
+   - 상태: ⚠️ INCOMPLETE

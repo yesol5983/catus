@@ -42,12 +42,8 @@ export interface User {
   createdAt: string;
 }
 
-export interface OnboardingData {
-  gender: '여자' | '남자' | '선택 안함';
-  ageGroup: '10대' | '20대' | '30대' | '40대 이상';
-  occupation: '학생' | '직장인' | '기타';
-  purpose: string;
-}
+// OnboardingData = SignupData (백엔드 /api/auth/signup 사용)
+export type OnboardingData = SignupData;
 
 // ===== 채팅 관련 타입 =====
 export interface ChatMessage {

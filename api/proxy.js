@@ -44,7 +44,16 @@ export default async function handler(req, res) {
 
     const targetUrl = `${BACKEND_URL}${path}`;
 
-    console.log(`Proxying: ${req.method} ${req.url} -> ${targetUrl}`);
+    console.log('📤 [REQUEST]', {
+      method: req.method,
+      originalUrl: req.url,
+      targetUrl,
+      headers: {
+        'content-type': req.headers['content-type'],
+        'authorization': req.headers['authorization'] ? 'Bearer ***' : undefined,
+      },
+      body: req.body
+    });
 
     const response = await axios({
       method: req.method,
@@ -56,6 +65,13 @@ export default async function handler(req, res) {
       data: req.body,
       httpsAgent, // ⚠️ SSL 검증 우회
       validateStatus: () => true, // 모든 상태 코드 허용
+    });
+
+    console.log('📥 [RESPONSE]', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data
     });
 
     // 응답 헤더 복사

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catus API 테스트</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .server-info {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 10px;
+    }
+
+    .section {
+      margin-bottom: 30px;
+      border: 2px solid #e0e0e0;
+      border-radius: 15px;
+      padding: 20px;
+    }
+
+    .section h2 {
+      color: #764ba2;
+      margin-bottom: 15px;
+      font-size: 20px;
+    }
+
+    .test-item {
+      background: #f9f9f9;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 10px;
+      border-left: 4px solid #667eea;
+    }
+
+    .test-item h3 {
+      color: #333;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: transform 0.2s;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .result.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+
+    .summary {
+      background: #fff3cd;
+      padding: 20px;
+      border-radius: 15px;
+      margin-top: 30px;
+      border: 2px solid #ffc107;
+    }
+
+    .summary h2 {
+      color: #856404;
+      margin-bottom: 15px;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .stat {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 14px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 2px solid #e0e0e0;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .token-section {
+      background: #e8f4f8;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🐱 Catus API 테스트 도구</h1>
+    <div class="server-info">
+      <strong>백엔드 서버:</strong> https://34.158.193.95/api<br>
+      <strong>프록시:</strong> /api/proxy
+    </div>
+
+    <!-- 토큰 설정 -->
+    <div class="token-section">
+      <h3>🔐 인증 토큰 설정</h3>
+      <input type="text" id="authToken" placeholder="Bearer 토큰을 입력하세요 (LocalStorage에서 가져오거나 직접 입력)">
+      <button onclick="loadTokenFromStorage()">LocalStorage에서 불러오기</button>
+      <button onclick="clearToken()">토큰 초기화</button>
+    </div>
+
+    <!-- 1. 채팅 API -->
+    <div class="section">
+      <h2>💬 채팅 API</h2>
+
+      <div class="test-item">
+        <h3>채팅 메시지 전송</h3>
+        <input type="text" id="chatMessage" placeholder="메시지를 입력하세요" value="안녕! 오늘 날씨가 좋네요.">
+        <button onclick="testChatSend()">전송</button>
+        <div id="chatSendResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>채팅 히스토리 조회</h3>
+        <button onclick="testChatHistory()">조회</button>
+        <div id="chatHistoryResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>특정 날짜 채팅 조회</h3>
+        <input type="date" id="chatDate" value="">
+        <button onclick="testChatByDate()">조회</button>
+        <div id="chatDateResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>채팅 분석</h3>
+        <input type="date" id="analyzeStartDate" placeholder="시작일">
+        <input type="date" id="analyzeEndDate" placeholder="종료일">
+        <button onclick="testChatAnalyze()">분석</button>
+        <div id="chatAnalyzeResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 2. 일기 API -->
+    <div class="section">
+      <h2>📔 일기 API</h2>
+
+      <div class="test-item">
+        <h3>일기 목록 조회 (월별)</h3>
+        <input type="month" id="diaryMonth" value="">
+        <button onclick="testDiaryList()">조회</button>
+        <div id="diaryListResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>랜덤 일기 조회</h3>
+        <button onclick="testDiaryRandom()">조회</button>
+        <div id="diaryRandomResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 3. 메시지 API -->
+    <div class="section">
+      <h2>💌 익명 메시지 API</h2>
+
+      <div class="test-item">
+        <h3>받은 메시지 조회</h3>
+        <button onclick="testMessageReceived()">조회</button>
+        <div id="messageReceivedResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>알림 조회</h3>
+        <button onclick="testNotifications()">조회</button>
+        <div id="notificationsResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 4. Big5 API -->
+    <div class="section">
+      <h2>🧠 Big5 성격 분석 API</h2>
+
+      <div class="test-item">
+        <h3>현재 성격 점수 조회</h3>
+        <button onclick="testBig5Current()">조회</button>
+        <div id="big5CurrentResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>성격 변화 이력 조회</h3>
+        <select id="big5Period">
+          <option value="weekly">주간</option>
+          <option value="monthly" selected>월간</option>
+          <option value="yearly">연간</option>
+        </select>
+        <button onclick="testBig5History()">조회</button>
+        <div id="big5HistoryResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 5. 설정 API -->
+    <div class="section">
+      <h2>⚙️ 설정 API</h2>
+
+      <div class="test-item">
+        <h3>설정 조회</h3>
+        <button onclick="testSettings()">조회</button>
+        <div id="settingsResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 6. 통계 API -->
+    <div class="section">
+      <h2>📊 통계 API</h2>
+
+      <div class="test-item">
+        <h3>감정 통계 조회</h3>
+        <input type="month" id="emotionsMonth" value="">
+        <button onclick="testEmotions()">조회</button>
+        <div id="emotionsResult" class="result" style="display:none;"></div>
+      </div>
+
+      <div class="test-item">
+        <h3>월별 통계 조회</h3>
+        <input type="month" id="statsMonth" value="">
+        <button onclick="testMonthlyStats()">조회</button>
+        <div id="statsResult" class="result" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- 전체 테스트 -->
+    <div class="btn-group">
+      <button onclick="runAllTests()" style="padding: 15px 30px; font-size: 16px;">🚀 전체 테스트 실행</button>
+      <button onclick="clearAllResults()" style="background: #dc3545;">🗑️ 결과 초기화</button>
+    </div>
+
+    <!-- 결과 요약 -->
+    <div class="summary" id="summary" style="display:none;">
+      <h2>📊 테스트 결과 요약</h2>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value" style="color: #28a745;" id="successCount">0</div>
+          <div class="stat-label">성공</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: #dc3545;" id="failCount">0</div>
+          <div class="stat-label">실패</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: #007bff;" id="totalCount">0</div>
+          <div class="stat-label">총 테스트</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" style="color: #ffc107;" id="successRate">0%</div>
+          <div class="stat-label">성공률</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '/api/proxy';
+    let testStats = { success: 0, fail: 0, total: 0 };
+
+    // 오늘 날짜로 초기화
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('chatDate').value = today;
+
+    const thisMonth = new Date().toISOString().slice(0, 7);
+    document.getElementById('diaryMonth').value = thisMonth;
+    document.getElementById('emotionsMonth').value = thisMonth;
+    document.getElementById('statsMonth').value = thisMonth;
+
+    // 7일 전부터 오늘까지
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    document.getElementById('analyzeStartDate').value = weekAgo;
+    document.getElementById('analyzeEndDate').value = today;
+
+    function getAuthToken() {
+      return document.getElementById('authToken').value;
+    }
+
+    function loadTokenFromStorage() {
+      const token = localStorage.getItem('catus_access_token');
+      if (token) {
+        document.getElementById('authToken').value = token;
+        showResult('authToken', `토큰을 불러왔습니다: ${token.substring(0, 20)}...`, 'info');
+      } else {
+        alert('LocalStorage에 토큰이 없습니다.');
+      }
+    }
+
+    function clearToken() {
+      document.getElementById('authToken').value = '';
+    }
+
+    async function apiCall(endpoint, options = {}) {
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` })
+      };
+
+      const response = await fetch(API_BASE + endpoint, {
+        ...options,
+        headers: { ...headers, ...options.headers }
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+
+      return response.json();
+    }
+
+    function showResult(elementId, data, type = 'success') {
+      testStats.total++;
+      if (type === 'success') testStats.success++;
+      if (type === 'error') testStats.fail++;
+
+      const element = document.getElementById(elementId);
+      element.className = `result ${type}`;
+      element.style.display = 'block';
+
+      if (typeof data === 'object') {
+        element.textContent = JSON.stringify(data, null, 2);
+      } else {
+        element.textContent = data;
+      }
+
+      updateSummary();
+    }
+
+    function updateSummary() {
+      document.getElementById('summary').style.display = 'block';
+      document.getElementById('successCount').textContent = testStats.success;
+      document.getElementById('failCount').textContent = testStats.fail;
+      document.getElementById('totalCount').textContent = testStats.total;
+      const rate = testStats.total > 0 ? ((testStats.success / testStats.total) * 100).toFixed(1) : 0;
+      document.getElementById('successRate').textContent = rate + '%';
+    }
+
+    function clearAllResults() {
+      const results = document.querySelectorAll('.result');
+      results.forEach(r => r.style.display = 'none');
+      testStats = { success: 0, fail: 0, total: 0 };
+      document.getElementById('summary').style.display = 'none';
+    }
+
+    // 채팅 API
+    async function testChatSend() {
+      try {
+        const message = document.getElementById('chatMessage').value;
+        const data = await apiCall('/chat/message', {
+          method: 'POST',
+          body: JSON.stringify({ message })
+        });
+        showResult('chatSendResult', data, 'success');
+      } catch (error) {
+        showResult('chatSendResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testChatHistory() {
+      try {
+        const data = await apiCall('/chat/history?page=0&size=10');
+        showResult('chatHistoryResult', data, 'success');
+      } catch (error) {
+        showResult('chatHistoryResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testChatByDate() {
+      try {
+        const date = document.getElementById('chatDate').value;
+        const data = await apiCall(`/chat/context/${date}`);
+        showResult('chatDateResult', data, 'success');
+      } catch (error) {
+        showResult('chatDateResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testChatAnalyze() {
+      try {
+        const startDate = document.getElementById('analyzeStartDate').value;
+        const endDate = document.getElementById('analyzeEndDate').value;
+        const data = await apiCall('/chat/analyze', {
+          method: 'POST',
+          body: JSON.stringify({ startDate, endDate })
+        });
+        showResult('chatAnalyzeResult', data, 'success');
+      } catch (error) {
+        showResult('chatAnalyzeResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // 일기 API
+    async function testDiaryList() {
+      try {
+        const [year, month] = document.getElementById('diaryMonth').value.split('-');
+        const data = await apiCall(`/diary/list?year=${year}&month=${month}`);
+        showResult('diaryListResult', data, 'success');
+      } catch (error) {
+        showResult('diaryListResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testDiaryRandom() {
+      try {
+        const data = await apiCall('/diary/random');
+        showResult('diaryRandomResult', data, 'success');
+      } catch (error) {
+        showResult('diaryRandomResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // 메시지 API
+    async function testMessageReceived() {
+      try {
+        const data = await apiCall('/message/received?page=0&size=20');
+        showResult('messageReceivedResult', data, 'success');
+      } catch (error) {
+        showResult('messageReceivedResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testNotifications() {
+      try {
+        const data = await apiCall('/message/notifications');
+        showResult('notificationsResult', data, 'success');
+      } catch (error) {
+        showResult('notificationsResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // Big5 API
+    async function testBig5Current() {
+      try {
+        const data = await apiCall('/big5/current');
+        showResult('big5CurrentResult', data, 'success');
+      } catch (error) {
+        showResult('big5CurrentResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testBig5History() {
+      try {
+        const period = document.getElementById('big5Period').value;
+        const data = await apiCall(`/big5/history?period=${period}`);
+        showResult('big5HistoryResult', data, 'success');
+      } catch (error) {
+        showResult('big5HistoryResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // 설정 API
+    async function testSettings() {
+      try {
+        const data = await apiCall('/settings');
+        showResult('settingsResult', data, 'success');
+      } catch (error) {
+        showResult('settingsResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // 통계 API
+    async function testEmotions() {
+      try {
+        const [year, month] = document.getElementById('emotionsMonth').value.split('-');
+        const data = await apiCall(`/stats/emotions?year=${year}&month=${month}`);
+        showResult('emotionsResult', data, 'success');
+      } catch (error) {
+        showResult('emotionsResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    async function testMonthlyStats() {
+      try {
+        const [year, month] = document.getElementById('statsMonth').value.split('-');
+        const data = await apiCall(`/stats/monthly?year=${year}&month=${month}`);
+        showResult('statsResult', data, 'success');
+      } catch (error) {
+        showResult('statsResult', `에러: ${error.message}`, 'error');
+      }
+    }
+
+    // 전체 테스트 실행
+    async function runAllTests() {
+      clearAllResults();
+
+      const tests = [
+        testChatHistory,
+        testChatByDate,
+        testDiaryList,
+        testDiaryRandom,
+        testMessageReceived,
+        testNotifications,
+        testBig5Current,
+        testBig5History,
+        testSettings,
+        testEmotions,
+        testMonthlyStats
+      ];
+
+      for (const test of tests) {
+        await test();
+        await new Promise(resolve => setTimeout(resolve, 500)); // 0.5초 대기
+      }
+
+      alert('전체 테스트 완료!');
+    }
+  </script>
+</body>
+</html>

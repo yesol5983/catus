@@ -40,25 +40,34 @@ export default function KakaoCallbackPage() {
         // React Query mutation으로 카카오 로그인
         const response = await kakaoLoginMutation.mutateAsync(code);
 
-        const { accessToken, refreshToken } = response;
+        console.log('✅ Login response:', response);
 
-        // JWT 토큰 저장
+        const { accessToken, refreshToken, isNewUser, userId } = response;
+
+        // 1. JWT 토큰 저장
         localStorage.setItem('catus_access_token', accessToken);
         localStorage.setItem('catus_refresh_token', refreshToken);
 
-        // 사용자 정보 저장 (user 객체가 있다면)
-        if ('user' in response) {
-          login(response.user as any);
-        }
+        // 2. 사용자 정보 저장 (AuthContext에 user 설정)
+        // 백엔드가 user 객체 대신 userId만 반환하므로 임시 User 객체 생성
+        const tempUser = {
+          id: userId,
+          nickname: '사용자', // 온보딩에서 설정
+          createdAt: new Date().toISOString(),
+        };
+        login(tempUser as any);
+        console.log('✅ User logged in:', tempUser);
 
-        // 신규 사용자면 온보딩, 기존 사용자면 홈으로
-        if (response.isNewUser) {
+        // 3. 네비게이션 (user 설정 후 이동)
+        if (isNewUser) {
+          console.log('📍 Navigating to /onboarding');
           navigate('/onboarding');
         } else {
+          console.log('📍 Navigating to /home');
           navigate('/home');
         }
       } catch (error) {
-        console.error('Login failed:', error);
+        console.error('❌ Login failed:', error);
         setError('로그인에 실패했습니다. 다시 시도해주세요.');
         setTimeout(() => navigate('/'), 2000);
       }
