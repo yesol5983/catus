@@ -7,6 +7,7 @@ import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import Tutorial from "./Tutorial";
 import type { AnonymousMessage } from "../types";
+import api from "../utils/api";
 
 import catImage from "../assets/images/cat.png";
 import cactus1 from "../assets/images/catus1.png";
@@ -44,6 +45,25 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSupportTutorial, setShowSupportTutorial] = useState(false);
+  const [isBig5Checked, setIsBig5Checked] = useState(false);
+
+  // ====== Big5 데이터 확인 ======
+  useEffect(() => {
+    const checkBig5Data = async () => {
+      try {
+        // 백엔드에서 Big5 데이터 조회
+        await api.big5.getCurrent();
+        console.log('✅ Big5 데이터 존재 - 홈페이지 유지');
+        setIsBig5Checked(true);
+      } catch (error: any) {
+        console.log('❌ Big5 데이터 없음 - Big5 테스트로 이동');
+        // Big5 데이터가 없으면 테스트 페이지로 이동
+        navigate('/big5/test');
+      }
+    };
+
+    checkBig5Data();
+  }, [navigate]);
 
   // ====== 새 응원 메시지 확인 ======
   useEffect(() => {
