@@ -35,6 +35,25 @@ import type {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
+ * SSL 인증서 문제로 proxy가 필요한 엔드포인트들
+ * (카카오 OAuth, 사용자 인증 관련)
+ */
+const PROXY_REQUIRED_ENDPOINTS = [
+  '/auth/kakao',
+  '/auth/me',
+  '/auth/signup',
+  '/auth/refresh',
+  '/auth/logout'
+];
+
+/**
+ * 엔드포인트가 proxy가 필요한지 확인
+ */
+const needsProxy = (url: string): boolean => {
+  return PROXY_REQUIRED_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
+/**
  * API 에러 클래스
  */
 export class ApiError extends Error {
@@ -110,6 +129,12 @@ const isRetryableError = (error: AxiosError): boolean => {
  */
 axiosInstance.interceptors.request.use(
   async (config) => {
+    // SSL 인증서 문제로 proxy가 필요한 엔드포인트는 /proxy 경로 추가
+    if (config.url && needsProxy(config.url)) {
+      config.baseURL = '/api/proxy';
+      console.log('🔒 Using proxy for SSL bypass:', config.url);
+    }
+
     let token = getToken();
 
     // 토큰이 곧 만료될 예정이면 프로액티브하게 갱신 (5분 전)
