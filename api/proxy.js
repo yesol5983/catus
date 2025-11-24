@@ -65,6 +65,9 @@ export default async function handler(req, res) {
       data: req.body,
       httpsAgent, // ⚠️ SSL 검증 우회
       validateStatus: () => true, // 모든 상태 코드 허용
+      // 추가 SSL 우회 옵션
+      maxRedirects: 5,
+      timeout: 30000,
     });
 
     console.log('📥 [RESPONSE]', {
@@ -98,17 +101,37 @@ export default async function handler(req, res) {
     // 응답 전달
     res.status(response.status).send(response.data);
   } catch (error) {
-    console.error('Proxy error:', {
+    console.error('🚨 PROXY ERROR:', {
       message: error.message,
+      code: error.code,
       stack: error.stack,
       url: req.url,
       method: req.method,
-      body: req.body
+      targetUrl: `${BACKEND_URL}${req.url.replace(/^\/api\/proxy/, '')}`,
+      body: req.body,
+      // SSL 관련 에러인지 확인
+      isSSLError: error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+                  error.code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+                  error.message?.includes('certificate') ||
+                  error.message?.includes('SSL')
     });
-    res.status(500).json({
-      error: 'Proxy Error',
-      message: error.message,
-      details: error.stack
-    });
+
+    // SSL 에러인 경우 특별 처리
+    if (error.code === 'DEPTH_ZERO_SELF_SIGNED_CERT' ||
+        error.code === 'SELF_SIGNED_CERT_IN_CHAIN' ||
+        error.message?.includes('certificate')) {
+      res.status(502).json({
+        error: 'SSL Certificate Error',
+        message: 'Backend SSL certificate verification failed',
+        details: 'The backend is using a self-signed certificate. Please install a valid SSL certificate.',
+        originalError: error.message
+      });
+    } else {
+      res.status(500).json({
+        error: 'Proxy Error',
+        message: error.message,
+        details: error.stack
+      });
+    }
   }
 }
