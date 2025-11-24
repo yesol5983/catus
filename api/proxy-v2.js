@@ -9,25 +9,21 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 
-const BACKEND_URL = 'https://34.158.193.95/api';
+// nginx 우회: Spring Boot 8080 직접 연결 (HTTP)
+const BACKEND_URL = 'http://34.158.193.95:8080/api';
 
-// 1. 자체 서명 인증서 파일을 읽어옵니다.
-//    'api/' 폴더에 있는 인증서 파일명을 정확히 기재해야 합니다.
-const certPath = path.resolve(process.cwd(), 'api', 'my-self-signed-cert.pem');
-let ca;
-try {
-  ca = fs.readFileSync(certPath);
-} catch (error) {
-  console.error('인증서 파일을 읽는 데 실패했습니다:', error);
-  // 인증서가 없으면 HTTPS 요청이 실패하도록 에이전트를 설정하지 않거나
-  // 혹은 다른 방식으로 오류를 처리할 수 있습니다.
-}
+// HTTP 연결이므로 SSL 인증서 불필요 (주석 처리)
+// const certPath = path.resolve(process.cwd(), 'api', 'my-self-signed-cert.pem');
+// let ca;
+// try {
+//   ca = fs.readFileSync(certPath);
+// } catch (error) {
+//   console.error('인증서 파일을 읽는 데 실패했습니다:', error);
+// }
 
-// 2. 읽어온 인증서만 신뢰하는 httpsAgent를 생성합니다.
-const httpsAgent = new https.Agent({
-  ca: ca,
-  // rejectUnauthorized는 기본값이 true이므로, ca가 제공되면 해당 ca를 신뢰하게 됩니다.
-});
+// const httpsAgent = new https.Agent({
+//   ca: ca,
+// });
 
 export default async function handler(req, res) {
   // CORS 헤더 설정
@@ -112,9 +108,8 @@ export default async function handler(req, res) {
       url: targetUrl,
       headers: requestHeaders,
       data: req.body,
-      httpsAgent, // ⚠️ SSL 검증 우회
+      // httpsAgent 제거 (HTTP 연결)
       validateStatus: () => true, // 모든 상태 코드 허용
-      // 추가 SSL 우회 옵션
       maxRedirects: 5,
       timeout: 30000,
     });
