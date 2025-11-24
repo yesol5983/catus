@@ -37,9 +37,13 @@ export default async function handler(req, res) {
     // /api/proxy 경로 제거
     let path = url.pathname.replace(/^\/api\/proxy/, '') || '/';
 
-    // Query string 추가
-    if (url.search) {
-      path += url.search;
+    // Query string 추가 (단, Vercel이 추가한 path 파라미터는 제외)
+    const searchParams = new URLSearchParams(url.search);
+    searchParams.delete('path'); // Vercel 리라이트가 추가한 중복 path 제거
+
+    const cleanSearch = searchParams.toString();
+    if (cleanSearch) {
+      path += '?' + cleanSearch;
     }
 
     const targetUrl = `${BACKEND_URL}${path}`;
