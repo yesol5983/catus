@@ -148,9 +148,26 @@ export default async function handler(req, res) {
       });
     }
 
-    // 응답 헤더 복사
+    // 응답 헤더 선택적 복사 (보안 헤더 제외 - Vercel이 자동 추가)
+    const headersToSkip = [
+      'x-content-type-options',
+      'x-frame-options',
+      'x-xss-protection',
+      'strict-transport-security',
+      'content-security-policy',
+      'permissions-policy',
+      'referrer-policy',
+      'cross-origin-opener-policy',
+      'cross-origin-resource-policy',
+      'server', // nginx 서버 정보 숨김
+      'connection',
+      'transfer-encoding',
+    ];
+
     Object.keys(response.headers).forEach(key => {
-      res.setHeader(key, response.headers[key]);
+      if (!headersToSkip.includes(key.toLowerCase())) {
+        res.setHeader(key, response.headers[key]);
+      }
     });
 
     // 응답 전달
