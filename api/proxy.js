@@ -74,6 +74,22 @@ export default async function handler(req, res) {
       data: response.data
     });
 
+    // 🔍 403 에러 특별 로깅
+    if (response.status === 403) {
+      console.error('🚨 403 FORBIDDEN DETECTED:', {
+        originalUrl: req.url,
+        targetUrl,
+        requestHeaders: {
+          authorization: req.headers['authorization'] ? 'Bearer ' + req.headers['authorization'].substring(7, 20) + '...' : 'MISSING',
+          contentType: req.headers['content-type']
+        },
+        requestBody: req.body,
+        responseStatus: response.status,
+        responseData: response.data,
+        responseHeaders: response.headers
+      });
+    }
+
     // 응답 헤더 복사
     Object.keys(response.headers).forEach(key => {
       res.setHeader(key, response.headers[key]);
