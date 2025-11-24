@@ -48,7 +48,29 @@ export default function KakaoCallbackPage() {
         localStorage.setItem('catus_access_token', accessToken);
         localStorage.setItem('catus_refresh_token', refreshToken);
 
-        // 2. 사용자 정보 저장 (AuthContext에 user 설정)
+        // 2. 신규 사용자인 경우 diaryGenerationTime 설정 (21:00 고정)
+        if (isNewUser) {
+          try {
+            await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/signup`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+              },
+              body: JSON.stringify({
+                nickname: '달이집사',
+                password: 'kakao_oauth_user',
+                diaryGenerationTime: '21:00'
+              })
+            });
+            console.log('✅ diaryGenerationTime set to 21:00');
+          } catch (signupError) {
+            console.error('⚠️ Failed to set diaryGenerationTime:', signupError);
+            // 실패해도 계속 진행 (이미 가입된 경우일 수 있음)
+          }
+        }
+
+        // 3. 사용자 정보 저장 (AuthContext에 user 설정)
         // 백엔드가 user 객체 대신 userId만 반환하므로 임시 User 객체 생성
         const tempUser = {
           id: userId,
@@ -58,7 +80,7 @@ export default function KakaoCallbackPage() {
         login(tempUser as any);
         console.log('✅ User logged in:', tempUser);
 
-        // 3. 네비게이션 (user 설정 후 이동)
+        // 4. 네비게이션 (user 설정 후 이동)
         if (isNewUser) {
           console.log('📍 Navigating to /onboarding');
           navigate('/onboarding');
