@@ -52,7 +52,8 @@
       "Bash(node test-backend-apis.cjs:*)",
       "mcp__playwright__browser_handle_dialog",
       "Bash(git revert:*)",
-      "Bash(printf:*)"
+      "Bash(printf:*)",
+      "Bash(tee:*)"
     ],
     "deny": [],
     "ask": []
