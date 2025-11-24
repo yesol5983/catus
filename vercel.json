@@ -48,7 +48,7 @@
   "rewrites": [
     {
       "source": "/api/proxy/:path*",
-      "destination": "/api/proxy-v2.js"
+      "destination": "/api/proxy-v2"
     },
     {
       "source": "/(.*)",
