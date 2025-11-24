@@ -318,11 +318,23 @@ export const authApi = {
 
 /**
  * 💬 채팅 API
+ * ⚠️ 테스트: proxy 없이 직접 백엔드 연결 (브라우저가 SSL 인증서 수락해야 함)
  */
 export const chatApi = {
   // 메시지 전송 (백엔드: POST /api/chat/message)
-  sendMessage: (content: string): Promise<{ messageId: number; userMessage: string; aiResponse: string; timestamp: string }> =>
-    post('/chat/message', { message: content }),
+  sendMessage: async (content: string): Promise<{ messageId: number; userMessage: string; aiResponse: string; timestamp: string }> => {
+    const token = getToken();
+    const response = await axios.post('https://34.158.193.95/api/chat/message',
+      { message: content },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
+      }
+    );
+    return response.data;
+  },
 
   // 대화 기록 조회 (백엔드: GET /api/chat/history)
   getHistory: (page: number = 0, size: number = 20): Promise<ChatHistory> =>
