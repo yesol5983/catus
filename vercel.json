@@ -47,12 +47,14 @@
   ],
   "rewrites": [
     {
-      "source": "/api/proxy/:path*",
-      "destination": "/api/proxy"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/proxy.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
 }

@@ -55,6 +55,15 @@ export default async function handler(req, res) {
       body: req.body
     });
 
+    // 🔍 채팅 요청 상세 로깅
+    if (req.url.includes('/chat/message')) {
+      console.log('💬 [CHAT REQUEST DETAIL]', {
+        fullAuthHeader: req.headers['authorization'],
+        bodyContent: JSON.stringify(req.body),
+        allHeaders: req.headers
+      });
+    }
+
     const response = await axios({
       method: req.method,
       url: targetUrl,
@@ -79,11 +88,14 @@ export default async function handler(req, res) {
 
     // 🔍 채팅 엔드포인트 특별 로깅
     if (req.url.includes('/chat/message')) {
-      console.log('💬 [CHAT ENDPOINT]', {
+      console.log('💬 [CHAT RESPONSE DETAIL]', {
         backendStatus: response.status,
-        backendData: response.data,
-        willSendToFrontend: response.status,
-        authorization: req.headers['authorization'] ? 'Present' : 'Missing'
+        backendStatusText: response.statusText,
+        backendDataType: typeof response.data,
+        backendDataKeys: response.data ? Object.keys(response.data) : 'null',
+        backendDataSample: JSON.stringify(response.data).substring(0, 200),
+        responseHeaders: response.headers,
+        willSendStatus: response.status
       });
     }
 
