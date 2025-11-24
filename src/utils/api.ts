@@ -79,10 +79,6 @@ const RETRY_DELAY_BASE = 1000; // 1초
  * Exponential backoff delay 계산
  */
 const getRetryDelay = (retryCount: number, status?: number): number => {
-  // 403 Rate Limit 에러는 더 긴 대기 (nginx rate limit 초당 30개 대응)
-  if (status === 403) {
-    return 2000 * Math.pow(2, retryCount); // 2s, 4s, 8s (더 느리게 재시도)
-  }
   return RETRY_DELAY_BASE * Math.pow(2, retryCount); // 1s, 2s, 4s
 };
 
@@ -105,12 +101,7 @@ const isRetryableError = (error: AxiosError): boolean => {
     return true;
   }
 
-  // 403 Rate Limit - 더 긴 대기 후 재시도 (nginx rate limit 대응)
-  if (error.response.status === 403) {
-    return true;
-  }
-
-  // 4xx 클라이언트 에러 - 재시도 불가능 (잘못된 요청)
+  // 4xx 클라이언트 에러 (403 포함) - 재시도 불가능
   return false;
 };
 
