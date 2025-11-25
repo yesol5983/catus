@@ -83,20 +83,20 @@ export default function Big5TestPage() {
   const currentQ = BIG5_QUESTIONS[currentQuestion];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+    <div className="h-[100dvh] flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       {/* 헤더 + 진행도 */}
-      <div className="w-full flex flex-col items-center pt-[12px] pb-[12px]" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+      <div className="w-full flex flex-col items-center pt-[2vh] pb-[1vh]" style={{ backgroundColor: 'var(--color-main-bg)' }}>
         {/* 제목 */}
-        <h1 className="text-[22px] font-[600] text-center whitespace-nowrap mb-[2px]" style={{ color: 'var(--color-text-primary)' }}>
+        <h1 className="text-[clamp(18px,4vw,22px)] font-[600] text-center whitespace-nowrap mb-[0.5vh]" style={{ color: 'var(--color-text-primary)' }}>
           🧠 BIG5 성격 검사
         </h1>
         {/* 설명 */}
-        <p className="text-[12px] text-center mb-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+        <p className="text-[clamp(10px,2.5vw,13px)] text-center mb-[1.5vh]" style={{ color: 'var(--color-text-secondary)' }}>
           당신의 성향을 분석하고 맞춤 일기를 만들어 드려요
         </p>
 
         {/* 진행도 바 */}
-        <div className="relative w-[80%] h-[6px] rounded-[9999px] mb-[6px]" style={{ backgroundColor: 'var(--color-border)' }}>
+        <div className="relative w-[80%] h-[6px] rounded-[9999px] mb-[0.5vh]" style={{ backgroundColor: 'var(--color-border)' }}>
           <motion.div
             className="absolute top-0 left-0 h-full bg-[#59B464] rounded-[9999px]"
             animate={{ width: `${progress}%` }}
@@ -112,28 +112,28 @@ export default function Big5TestPage() {
         </div>
 
         {/* 진행 단계 텍스트 */}
-        <p className="text-[13px] font-[500] text-center" style={{ color: 'var(--color-text-secondary)' }}>
+        <p className="text-[clamp(11px,2.5vw,13px)] font-[500] text-center" style={{ color: 'var(--color-text-secondary)' }}>
           {currentQuestion + 1} / {BIG5_QUESTIONS.length}
         </p>
       </div>
 
       {/* 질문 + 답변 */}
-      <div className="flex-1 flex flex-col justify-center px-[10%] py-[16px]">
+      <div className="flex-1 flex flex-col justify-center px-[10%]">
         {/* 질문 */}
-        <p className="text-[16px] text-center mb-[16px] leading-[1.5]" style={{ color: 'var(--color-text-primary)' }}>
+        <p className="text-[clamp(14px,3.5vw,18px)] text-center mb-[2vh] leading-[1.4]" style={{ color: 'var(--color-text-primary)' }}>
           {currentQ.text}
         </p>
 
         {/* 구분선 */}
-        <div className="w-full h-[1px] mb-[16px]" style={{ backgroundColor: 'var(--color-border)' }} />
+        <div className="w-full h-[1px] mb-[2vh]" style={{ backgroundColor: 'var(--color-border)' }} />
 
         {/* 답변 선택 */}
-        <div className="flex flex-col gap-[8px]">
+        <div className="flex flex-col gap-[1vh]">
           {SCORE_OPTIONS.map((option) => (
             <button
               key={option.value}
               onClick={() => handleAnswerSelect(option.value)}
-              className={`w-full py-[12px] px-[14px] rounded-[10px] border-0 cursor-pointer transition-all text-[14px] ${
+              className={`w-full py-[1.5vh] px-[14px] rounded-[10px] border-0 cursor-pointer transition-all text-[clamp(12px,3vw,15px)] ${
                 selectedAnswer === option.value
                   ? 'bg-[rgba(89,180,100,0.15)] text-[#59B464] font-[500]'
                   : 'bg-[white] font-[400]'
@@ -146,12 +146,12 @@ export default function Big5TestPage() {
         </div>
 
         {/* 네비게이션 버튼 */}
-        <div className="flex gap-[12px] mt-[20px]">
+        <div className="flex gap-[12px] mt-[2.5vh]">
           {currentQuestion > 0 && (
             <button
               onClick={handlePrevious}
               disabled={submitTestMutation.isPending}
-              className="flex-1 py-[10px] px-[20px] rounded-[10px] border-0 cursor-pointer text-[14px] font-[500] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-[1.5vh] px-[20px] rounded-[10px] border-0 cursor-pointer text-[clamp(12px,3vw,14px)] font-[500] disabled:opacity-50 disabled:cursor-not-allowed"
               style={{ backgroundColor: 'var(--color-bg-card)', color: 'var(--color-text-primary)' }}
             >
               이전
@@ -160,7 +160,7 @@ export default function Big5TestPage() {
           <button
             onClick={handleNext}
             disabled={selectedAnswer === null || submitTestMutation.isPending}
-            className={`flex-1 py-[10px] px-[20px] rounded-[10px] border-0 cursor-pointer text-[14px] font-[500] text-[white] disabled:cursor-not-allowed ${
+            className={`flex-1 py-[1.5vh] px-[20px] rounded-[10px] border-0 cursor-pointer text-[clamp(12px,3vw,14px)] font-[500] text-[white] disabled:cursor-not-allowed ${
               selectedAnswer === null ? 'bg-[#ccc]' : 'bg-[#59B464]'
             }`}
           >
@@ -174,8 +174,8 @@ export default function Big5TestPage() {
 
         {/* 도움말 */}
         {currentQuestion === 0 && (
-          <div className="mt-[16px] p-[12px] rounded-[10px] bg-[rgba(89,180,100,0.1)]">
-            <p className="text-[12px] text-center text-[#59B464]">
+          <div className="mt-[2vh] p-[1.5vh] rounded-[10px] bg-[rgba(89,180,100,0.1)]">
+            <p className="text-[clamp(10px,2.5vw,12px)] text-center text-[#59B464]">
               💡 솔직하게 답변할수록 더 정확한 분석이 가능해요
             </p>
           </div>
