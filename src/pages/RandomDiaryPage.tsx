@@ -184,7 +184,7 @@ export default function RandomDiaryPage() {
                 {/* 새로고침 버튼 */}
                 <button
                   onClick={handleRefresh}
-                  className="text-[20px] leading-none bg-transparent border-0 hover:opacity-70 transition-opacity"
+                  className="text-[17px] leading-none bg-transparent border-0 hover:opacity-70 transition-opacity"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
                   ↻

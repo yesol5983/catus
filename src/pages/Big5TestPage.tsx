@@ -87,7 +87,7 @@ export default function Big5TestPage() {
       {/* 헤더 + 진행도 */}
       <div className="w-full flex flex-col items-center pt-[2vh] pb-[1vh]" style={{ backgroundColor: 'var(--color-main-bg)' }}>
         {/* 제목 */}
-        <h1 className="text-[clamp(18px,4vw,22px)] font-[600] text-center whitespace-nowrap mb-[0.5vh]" style={{ color: 'var(--color-text-primary)' }}>
+        <h1 className="text-[clamp(22px,4vw,27px)] font-[600] text-center whitespace-nowrap mb-[0.5vh]" style={{ color: 'var(--color-text-primary)' }}>
           🧠 BIG5 성격 검사
         </h1>
         {/* 설명 */}
