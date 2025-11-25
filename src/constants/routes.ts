@@ -12,8 +12,6 @@ export const ROUTES = {
   DIARY: "/diary",
   DIARY_DETAIL: "/diary/:date",
   SETTINGS: "/settings",
-  SUPPORT: "/support",
-  LETTER: "/letter",
   MESSAGES: "/messages",
   BIG5_STATS: "/big5/stats",
   BIG5_TEST: "/big5/test",

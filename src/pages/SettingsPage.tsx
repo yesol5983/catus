@@ -338,8 +338,8 @@ function SettingsPage() {
       const savedDiaryNotification = localStorage.getItem(STORAGE_KEYS.DIARY_NOTIFICATION);
       // notifications.anonymous 또는 notifications.messageReceived 확인
       const encouragementValue = settingsData.notifications?.anonymous ??
-                                 settingsData.notifications?.messageReceived ??
-                                 (settingsData as any).settings?.notifications?.anonymous ?? true;
+                                  settingsData.notifications?.messageReceived ??
+                                  (settingsData as any).settings?.notifications?.anonymous ?? true;
       setNotifications({
         diaryCreation: savedDiaryNotification !== null ? savedDiaryNotification === 'true' : true,
         encouragement: encouragementValue

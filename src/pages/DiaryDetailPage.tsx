@@ -1,41 +1,27 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
 import { ROUTES } from '../constants/routes';
-import { diaryApi } from '../utils/api';
-import { formatDate } from '../utils/dateFormat';
-import type { Diary } from '../types';
-import HomePage from './HomePage';
+import { diaryApi, messageApi } from '../utils/api';
+import { useDarkMode } from '../contexts/DarkModeContext';
+import type { DiaryDetailResponse, Emotion } from '../types';
 
 export default function DiaryDetailPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const diaryId = id ? parseInt(id, 10) : null;
   const queryClient = useQueryClient();
+  const { isDarkMode } = useDarkMode();
 
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedTitle, setEditedTitle] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [showCommentSheet, setShowCommentSheet] = useState(false);
+  const [showEditSheet, setShowEditSheet] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editedContent, setEditedContent] = useState('');
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // Browser back button handling for modal
-  useEffect(() => {
-    // Push a new history state when modal opens
-    window.history.pushState({ modal: 'diaryDetail' }, '');
-
-    const handlePopState = (event: PopStateEvent) => {
-      // Close modal when back button is pressed
-      navigate(ROUTES.CALENDAR);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [navigate]);
+  const [showBig5Sheet, setShowBig5Sheet] = useState(false);
 
   // Fetch diary data (백엔드: GET /api/diary/{id})
   const { data: diaryData, isLoading, error } = useQuery({
@@ -48,12 +34,25 @@ export default function DiaryDetailPage() {
     retry: 2,
   });
 
-  const diary: Diary | undefined = diaryData;
+  const diary: DiaryDetailResponse | undefined = diaryData;
 
-  // 일기 데이터 로드 시 편집 폼 초기화
+  // 받은 메시지 조회 (백엔드: GET /api/message/received)
+  const { data: messagesData } = useQuery({
+    queryKey: ['messages', 'received', diaryId],
+    queryFn: async () => {
+      return await messageApi.getReceived(0, 50);
+    },
+    enabled: !!diaryId,
+  });
+
+  // 이 일기에 대한 응원 메시지 필터링
+  const encouragementMessages = messagesData?.messages?.filter(
+    (msg) => msg.diaryId === diaryId
+  ) || [];
+
+  // 일기 데이터 로드 시 초기화
   useEffect(() => {
     if (diary) {
-      setEditedTitle(diary.title || '');
       setEditedContent(diary.content || '');
     }
   }, [diary]);
@@ -63,19 +62,20 @@ export default function DiaryDetailPage() {
     mutationFn: async () => {
       if (!diaryId) throw new Error('일기 ID가 필요합니다.');
       return await diaryApi.update(diaryId, {
-        title: editedTitle,
         content: editedContent,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diary', 'detail', diaryId] });
       queryClient.invalidateQueries({ queryKey: ['diary', 'list'] });
-      setIsEditing(false);
-      alert('일기가 수정되었습니다.');
+      setShowEditSheet(false);
+      setToastMessage('일기가 수정되었습니다');
+      setTimeout(() => setToastMessage(''), 3000);
     },
     onError: (error: any) => {
       console.error('일기 수정 실패:', error);
-      alert(`일기 수정에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      setToastMessage('일기 수정에 실패했습니다');
+      setTimeout(() => setToastMessage(''), 3000);
     },
   });
 
@@ -87,39 +87,94 @@ export default function DiaryDetailPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diary', 'list'] });
-      alert('일기가 삭제되었습니다.');
+      setShowDeleteModal(false);
       navigate(ROUTES.CALENDAR);
     },
     onError: (error: any) => {
       console.error('일기 삭제 실패:', error);
-      alert(`일기 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      setToastMessage('일기 삭제에 실패했습니다');
+      setTimeout(() => setToastMessage(''), 3000);
     },
   });
 
-  const handleUpdate = () => {
-    if (!editedTitle.trim() || !editedContent.trim()) {
-      alert('제목과 내용을 모두 입력해주세요.');
-      return;
-    }
+  const formatDate = (dateStr: string): string => {
+    const [year, month, day] = dateStr.split('-');
+    return `${year}년 ${parseInt(month)}월 ${parseInt(day)}일`;
+  };
+
+  const handlePrivateToggle = (): void => {
+    const newPrivateState = !isPrivate;
+    setIsPrivate(newPrivateState);
+
+    setToastMessage(
+      newPrivateState
+        ? '일기를 나만 볼 수 있게 수정했어요'
+        : '일기가 모두에게 공유되었어요'
+    );
+
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  const handleDeleteClick = (): void => {
+    setShowEditModal(false);
+    setTimeout(() => {
+      setShowDeleteModal(true);
+    }, 250);
+  };
+
+  const handleDeleteConfirm = (): void => {
+    deleteMutation.mutate();
+  };
+
+  const handleEditDiary = (): void => {
+    setEditedContent(diary?.content || '');
+    setShowEditModal(false);
+    setTimeout(() => {
+      setShowEditSheet(true);
+    }, 250);
+  };
+
+  const handleSaveEdit = (): void => {
     updateMutation.mutate();
   };
 
-  const handleDelete = () => {
-    setShowDeleteConfirm(true);
+  const getEmotionColor = (emotion?: string): string => {
+    const colors: Record<string, string> = {
+      행복: '#8EC7A9',
+      슬픔: '#AFCBFF',
+      불안: '#FDE68A',
+      화남: '#FCA5A5',
+      보통: '#D4D4D4',
+    };
+    return colors[emotion || '보통'] || '#AFCBFF';
   };
 
-  const confirmDelete = () => {
-    deleteMutation.mutate();
+  // Big5 점수를 퍼센트로 변환 (0-100 기준)
+  const getBig5Percent = (score: number): number => {
+    return Math.min(100, Math.max(0, score));
+  };
+
+  // Big5 레이블
+  const big5Labels: Record<string, string> = {
+    openness: '개방성',
+    conscientiousness: '성실성',
+    extraversion: '외향성',
+    agreeableness: '친화성',
+    neuroticism: '신경성',
   };
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#fef9f1] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5F6F52] mx-auto mb-4"></div>
-          <p className="text-gray-600">일기를 불러오는 중...</p>
-        </div>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{
+          color: 'var(--color-text-secondary)',
+          backgroundColor: 'var(--color-main-bg)',
+        }}
+      >
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E7057] mb-4"></div>
+        <p>일기를 불러오는 중...</p>
       </div>
     );
   }
@@ -127,12 +182,18 @@ export default function DiaryDetailPage() {
   // Error state
   if (error || !diary) {
     return (
-      <div className="min-h-screen bg-[#fef9f1] flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">😢 일기를 찾을 수 없습니다</h1>
-        <p className="text-gray-600 mb-8">일기 ID {diaryId}를 찾을 수 없습니다.</p>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center"
+        style={{
+          color: 'var(--color-text-secondary)',
+          backgroundColor: 'var(--color-main-bg)',
+        }}
+      >
+        <div className="text-5xl mb-4">📭</div>
+        <p>이 날짜에는 기록된 일기가 없어요.</p>
         <button
           onClick={() => navigate(ROUTES.CALENDAR)}
-          className="px-6 py-3 bg-[#5F6F52] text-white rounded-lg hover:opacity-90 transition-opacity"
+          className="mt-4 px-6 py-3 bg-[#5E7057] text-white rounded-lg"
         >
           캘린더로 돌아가기
         </button>
@@ -140,260 +201,555 @@ export default function DiaryDetailPage() {
     );
   }
 
-  // diary.emotion이 없을 수 있으므로 기본값 설정
-  const emotionColor = '#ccc';
-  const emotionEmoji = '😐';
+  const commentCount = encouragementMessages.length;
 
   return (
-    <>
-      {/* Background (HomePage) */}
-      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
-        <HomePage />
+    <div
+      className="min-h-screen flex flex-col relative"
+      style={{ backgroundColor: 'var(--color-main-bg)' }}
+    >
+      {/* 토스트 메시지 */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[#5E705790] bg-opacity-90 text-[#FFFFFF] text-[14px] px-[20px] py-[12px] rounded-[12px] shadow-lg"
+            style={{ minWidth: '250px', textAlign: 'center' }}
+          >
+            {toastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 헤더 */}
+      <div
+        className="flex items-center justify-between px-[12px] py-[12px]"
+        style={{ backgroundColor: 'var(--color-bg-card)' }}
+      >
+        <button
+          onClick={() => navigate(ROUTES.CALENDAR)}
+          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-5px' }}
+        >
+          ←
+        </button>
+
+        <div className="text-[16px] font-[600] text-[#5E7057]">
+          {diary.date && formatDate(diary.date)}
+        </div>
+
+        <button
+          onClick={() => setShowEditModal(true)}
+          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-4px' }}
+        >
+          ⋯
+        </button>
       </div>
 
-      {/* Diary Detail Modal */}
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          zIndex: 1000,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'auto',
-        }}
-      >
-        <motion.div
-          className="bg-[#F5F5F0] rounded-[24px] w-[90%] max-w-[480px] max-h-[85vh] overflow-hidden flex flex-col shadow-2xl my-8"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Header */}
+      {/* 일기 이미지 */}
+      {diary.imageUrl && (
+        <img
+          src={diary.imageUrl}
+          alt="일기 이미지"
+          className="w-full aspect-square object-cover mx-auto block max-h-[400px] max-w-[400px]"
+        />
+      )}
+
+      {/* 본문 */}
+      <div className="flex-1 overflow-y-auto px-[20px] py-[10px]">
+        {/* 하트 + 댓글 버튼 + 토글 */}
+        <div className="flex items-center justify-between mb-[20px]">
+          {/* 왼쪽: 하트 + 댓글 버튼 + 공유 버튼 */}
+          <div className="flex items-center gap-[12px]">
+            <svg width="27" height="27" viewBox="0 0 24 24" fill={getEmotionColor((diary as any).emotion)} stroke="#000000" strokeWidth="1.5">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+            </svg>
+
+            <button
+              onClick={() => setShowCommentSheet(true)}
+              className="flex items-center gap-[6px] bg-transparent border-0 hover:opacity-80"
+            >
+              <svg width="25" height="25" viewBox="0 0 24 24" fill="#FFFFFF" stroke="#000000" strokeWidth="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span className="text-[14px] font-[600]" style={{ color: 'var(--color-text-primary)' }}>{commentCount}</span>
+            </button>
+
+            {/* 공유 버튼 */}
+            <button
+              onClick={() => {
+                setToastMessage('공유 기능 준비 중입니다');
+                setTimeout(() => setToastMessage(''), 3000);
+              }}
+              className="bg-transparent border-0 hover:opacity-70 cursor-pointer"
+              style={{ marginTop: '5px', marginLeft: '-9px' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+
+          {/* 오른쪽: 토글 */}
           <div
-            className="flex items-center justify-between px-4 py-3 text-white rounded-t-[24px]"
-            style={{ backgroundColor: emotionColor }}
+            onClick={handlePrivateToggle}
+            className={`relative w-[51px] h-[31px] rounded-full cursor-pointer transition-all ${
+              isPrivate ? 'bg-[#5E7057]' : 'bg-[#D1D5DB]'
+            }`}
           >
-            <button
-              onClick={() => navigate(ROUTES.CALENDAR)}
-              className="text-2xl w-10 h-10 flex items-center justify-center hover:opacity-70 bg-transparent border-0 text-white"
+            <div
+              className={`absolute top-[3px] w-[25px] h-[25px] bg-[#FFFFFF] rounded-full transition-all ${
+                isPrivate ? 'left-[23px]' : 'left-[3px]'
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* AI 요약 (content) */}
+        <div className="mb-[20px]">
+          <div
+            className="text-[13px] font-[500] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            {diary.content ||
+              '오늘은 평범한 하루였어요. 특별한 일은 없었지만 그 자체로 충분히 괜찮았어요.'}
+          </div>
+        </div>
+
+        {/* Big5 성격 분석 섹션 */}
+        {diary.big5Scores && (
+          <div
+            className="rounded-[16px] p-[16px] mb-[20px]"
+            style={{ backgroundColor: 'var(--color-bg-card)' }}
+          >
+            <div
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => setShowBig5Sheet(true)}
             >
-              ‹
-            </button>
-            <div className="text-[15px] font-semibold">
-              {diary.date && formatDate(diary.date, 'full')}
-            </div>
-            <button
-              onClick={() => navigate(ROUTES.CALENDAR)}
-              className="text-2xl w-10 h-10 flex items-center justify-center hover:opacity-70 bg-transparent border-0 text-white"
-            >
-              ×
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
-            {/* Emotion & Picture */}
-            <div className="text-center">
-              <div className="text-6xl mb-3">{emotionEmoji}</div>
-              <div
-                className="inline-block px-4 py-2 rounded-full text-white font-semibold text-sm"
-                style={{ backgroundColor: emotionColor }}
-              >
-                {diary.emotion}
+              <div className="flex items-center gap-[8px]">
+                <span className="text-[18px]">🧠</span>
+                <span className="text-[14px] font-[600]" style={{ color: 'var(--color-text-primary)' }}>
+                  오늘의 성격 분석
+                </span>
               </div>
+              <span className="text-[#999]" style={{ fontSize: '18px' }}>›</span>
             </div>
 
-            {/* Picture (백엔드 필드: imageUrl) */}
-            {diary.imageUrl && (
-              <div className="rounded-2xl overflow-hidden shadow-lg bg-white">
-                <img
-                  src={diary.imageUrl}
-                  alt="그림일기"
-                  className="w-full h-auto object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Title */}
-            {isEditing ? (
-              <div className="bg-white rounded-2xl p-5 shadow-md">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <span>📝</span>
-                  <span>제목</span>
-                </h3>
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52]"
-                  placeholder="제목을 입력하세요"
-                />
-              </div>
-            ) : (
-              diary.title && (
-                <div className="bg-white rounded-2xl p-5 shadow-md">
-                  <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <span>📝</span>
-                    <span>제목</span>
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {diary.title}
-                  </p>
-                </div>
-              )
-            )}
-
-            {/* Content (백엔드 필드: content) */}
-            {isEditing ? (
-              <div className="bg-white rounded-2xl p-5 shadow-md">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <span>💬</span>
-                  <span>전체 내용</span>
-                </h3>
-                <textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52] min-h-[200px]"
-                  placeholder="내용을 입력하세요"
-                />
-              </div>
-            ) : (
-              diary.content && (
-                <div className="bg-white rounded-2xl p-5 shadow-md">
-                  <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                    <span>💬</span>
-                    <span>전체 내용</span>
-                  </h3>
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                    {diary.content}
-                  </p>
-                </div>
-              )
-            )}
-
-            {/* Big5 Scores (백엔드 응답에 포함될 수 있음) */}
-            {diary.big5Scores && (
-              <div className="bg-white rounded-2xl p-5 shadow-md">
-                <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-                  <span>🧠</span>
-                  <span>성격 분석</span>
-                </h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>개방성 (Openness):</span>
-                    <span className="font-semibold">{diary.big5Scores.openness}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>성실성 (Conscientiousness):</span>
-                    <span className="font-semibold">{diary.big5Scores.conscientiousness}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>외향성 (Extraversion):</span>
-                    <span className="font-semibold">{diary.big5Scores.extraversion}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>친화성 (Agreeableness):</span>
-                    <span className="font-semibold">{diary.big5Scores.agreeableness}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>신경증 (Neuroticism):</span>
-                    <span className="font-semibold">{diary.big5Scores.neuroticism}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Created At */}
-            <div className="text-center text-sm text-gray-500">
-              {diary.createdAt && `작성일: ${formatDate(diary.createdAt, 'datetime')}`}
-            </div>
-          </div>
-
-          {/* Footer Actions */}
-          <div className="bg-[#F5F5F0] p-4 space-y-3">
-            {isEditing ? (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  disabled={updateMutation.isPending}
-                  className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={handleUpdate}
-                  disabled={updateMutation.isPending}
-                  className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {updateMutation.isPending ? '저장 중...' : '저장'}
-                </button>
-              </div>
-            ) : (
-              <>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
+            {/* Big5 미니 프리뷰 */}
+            <div className="mt-[12px] flex gap-[8px]">
+              {Object.entries(diary.big5Scores).map(([key, value]) => (
+                <div key={key} className="flex-1 text-center">
+                  <div
+                    className="h-[4px] rounded-full mb-[4px]"
+                    style={{
+                      backgroundColor: '#e0e0e0',
+                      overflow: 'hidden',
+                    }}
                   >
-                    수정
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={deleteMutation.isPending}
-                    className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                  >
-                    삭제
-                  </button>
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${getBig5Percent(value)}%`,
+                        backgroundColor: '#5E7057',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                    {big5Labels[key]?.substring(0, 2)}
+                  </span>
                 </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => navigate(ROUTES.CALENDAR)}
-                    className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
-                  >
-                    캘린더로
-                  </button>
-                  <button
-                    onClick={() => navigate(ROUTES.HOME)}
-                    className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
-                  >
-                    홈으로
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </motion.div>
-
-        {/* 삭제 확인 모달 */}
-        {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
-            <div className="bg-white rounded-2xl p-6 max-w-sm mx-4">
-              <h3 className="text-xl font-bold mb-4 text-gray-800">일기 삭제</h3>
-              <p className="text-gray-600 mb-6">정말로 이 일기를 삭제하시겠습니까? 삭제된 일기는 복구할 수 없습니다.</p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={confirmDelete}
-                  disabled={deleteMutation.isPending}
-                  className="flex-1 py-3 bg-red-500 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {deleteMutation.isPending ? '삭제 중...' : '삭제'}
-                </button>
-              </div>
+              ))}
             </div>
           </div>
         )}
       </div>
-    </>
+
+      {/* 댓글 Bottom Sheet */}
+      <AnimatePresence>
+        {showCommentSheet && (
+          <div
+            onClick={() => setShowCommentSheet(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'flex-end',
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="w-full rounded-t-[24px] max-h-[60vh] flex flex-col overflow-hidden"
+              style={{
+                backgroundColor: 'var(--color-bg-card)',
+                zIndex: 10001,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 고정 헤더 영역 */}
+              <div className="flex-shrink-0 pt-[24px] pb-[16px] flex flex-col items-center">
+                {/* 핸들바 */}
+                <div
+                  className="w-[40px] h-[4px] rounded-full mb-[12px]"
+                  style={{ backgroundColor: '#D1D5DB' }}
+                />
+
+                {/* 제목 */}
+                <h2
+                  className="text-[18px] font-[600] mb-[16px] text-center"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  날아온 응원 메세지
+                </h2>
+
+                {/* 구분선 */}
+                <div
+                  className="border-t w-full"
+                  style={{ borderColor: 'var(--color-border)' }}
+                ></div>
+              </div>
+
+              {/* 스크롤 가능한 메시지 영역 */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden px-[20px] pb-[32px]">
+                <div className="w-full max-w-[300px] mx-auto pt-[0px]">
+                  {encouragementMessages.length > 0 ? (
+                    <div className="flex flex-col gap-[16px]">
+                      {encouragementMessages.map((message, index) => (
+                        <div key={message.id} className="flex flex-col gap-[4px]">
+                          <div className="text-[14px] font-[600]" style={{ color: 'var(--color-text-primary)' }}>
+                            익명 {index + 1}
+                          </div>
+                          <div
+                            className="text-[13px] font-[400] leading-relaxed"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            {message.content}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div
+                      className="text-center py-[40px]"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      아직 응원 메시지가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Big5 상세 Bottom Sheet */}
+      <AnimatePresence>
+        {showBig5Sheet && diary.big5Scores && (
+          <div
+            onClick={() => setShowBig5Sheet(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'flex-end',
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="w-full rounded-t-[24px] max-h-[70vh] flex flex-col overflow-hidden"
+              style={{
+                backgroundColor: 'var(--color-bg-card)',
+                zIndex: 10001,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 헤더 */}
+              <div className="flex-shrink-0 pt-[24px] pb-[16px] flex flex-col items-center">
+                <div
+                  className="w-[40px] h-[4px] rounded-full mb-[12px]"
+                  style={{ backgroundColor: '#D1D5DB' }}
+                />
+                <h2
+                  className="text-[18px] font-[600] mb-[8px] text-center"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  🧠 오늘의 Big5 성격 분석
+                </h2>
+                <p
+                  className="text-[13px] text-center px-[20px]"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  일기 내용을 바탕으로 분석한 오늘의 성격 특성이에요
+                </p>
+                <div
+                  className="border-t w-full mt-[16px]"
+                  style={{ borderColor: 'var(--color-border)' }}
+                ></div>
+              </div>
+
+              {/* Big5 상세 내용 */}
+              <div className="flex-1 overflow-y-auto px-[20px] pb-[32px]">
+                <div className="flex flex-col gap-[20px]">
+                  {Object.entries(diary.big5Scores).map(([key, value]) => (
+                    <div key={key}>
+                      <div className="flex justify-between items-center mb-[8px]">
+                        <span className="text-[14px] font-[600]" style={{ color: 'var(--color-text-primary)' }}>
+                          {big5Labels[key]}
+                        </span>
+                        <span className="text-[14px] font-[600]" style={{ color: '#5E7057' }}>
+                          {value}점
+                        </span>
+                      </div>
+                      <div
+                        className="h-[8px] rounded-full"
+                        style={{ backgroundColor: '#e0e0e0' }}
+                      >
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${getBig5Percent(value)}%`,
+                            backgroundColor: '#5E7057',
+                          }}
+                        />
+                      </div>
+                      <p
+                        className="text-[12px] mt-[6px]"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        {getBig5Description(key, value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* 공통 배경 오버레이 */}
+      {(showEditModal || showDeleteModal || showEditSheet) && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 10000,
+          }}
+          onClick={() => {
+            if (showEditModal) setShowEditModal(false);
+            if (showDeleteModal) setShowDeleteModal(false);
+            if (showEditSheet) setShowEditSheet(false);
+          }}
+        />
+      )}
+
+      {/* 일기 관리 모달 */}
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[20px] p-[24px] w-[85%] max-w-[320px]"
+            style={{ backgroundColor: 'var(--color-bg-card)', zIndex: 10001 }}
+          >
+            <h2 className="text-[18px] font-semibold mb-[20px] text-center" style={{ color: 'var(--color-text-primary)' }}>
+              일기 관리
+            </h2>
+            <div className="flex flex-col gap-[12px]">
+              <button
+                onClick={handleEditDiary}
+                className="w-full py-[14px] bg-[#5E7057] text-[#FFFFFF] rounded-[12px] text-[15px] font-medium hover:opacity-90 transition-opacity border-0"
+              >
+                일기 수정하기
+              </button>
+              <button
+                onClick={handleDeleteClick}
+                className="w-full py-[14px] rounded-[12px] text-[15px] font-medium hover:bg-red-50 transition-colors border border-[#5E7057]"
+                style={{ backgroundColor: 'var(--color-bg-card)', color: isDarkMode ? 'white' : 'var(--color-text-primary)' }}
+              >
+                일기 삭제하기
+              </button>
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="w-full py-[14px] rounded-[12px] text-[15px] font-medium transition-colors border-0"
+                style={{ backgroundColor: 'rgba(128, 128, 128, 0.2)', color: 'var(--color-text-primary)' }}
+              >
+                취소
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 삭제 확인 모달 */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[20px] p-[24px] w-[85%] max-w-[320px]"
+            style={{ backgroundColor: 'var(--color-bg-card)', zIndex: 10001 }}
+          >
+            <div className="text-[40px] text-center mb-[16px]">⚠️</div>
+            <h2 className="text-[18px] font-semibold mb-[12px] text-center" style={{ color: 'var(--color-text-primary)' }}>
+              일기를 삭제할까요?
+            </h2>
+            <p className="text-[14px] mb-[24px] text-center leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
+              삭제한 일기는 복구할 수 없어요.<br />
+              정말 삭제하시겠어요?
+            </p>
+            <div className="flex gap-[12px]">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 py-[14px] rounded-[12px] text-[15px] font-medium transition-colors border-0"
+                style={{ backgroundColor: 'rgba(128, 128, 128, 0.2)', color: 'var(--color-text-primary)' }}
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                disabled={deleteMutation.isPending}
+                className="flex-1 py-[14px] bg-[black] text-[white] rounded-[12px] text-[15px] font-medium hover:bg-red-50 transition-colors border border-red-500 disabled:opacity-50"
+              >
+                {deleteMutation.isPending ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 일기 수정 Bottom Sheet */}
+      <AnimatePresence>
+        {showEditSheet && (
+          <div
+            onClick={() => setShowEditSheet(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              pointerEvents: 'auto',
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="w-full rounded-t-[24px] p-[24px] pb-[32px] max-h-[80vh] overflow-y-auto relative"
+              style={{ backgroundColor: 'var(--color-bg-card)', zIndex: 10001 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-[16px] font-semibold mb-[24px] text-center" style={{ color: 'var(--color-text-primary)' }}>
+                일기 수정하기
+              </h2>
+
+              {/* 일기 내용 */}
+              <div className="mb-[24px]">
+                <label className="text-[14px] mb-[12px] block" style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                  일기 내용
+                </label>
+                <textarea
+                  value={editedContent}
+                  onChange={(e) => setEditedContent(e.target.value)}
+                  placeholder="오늘의 이야기를 기록해 보세요."
+                  className="w-full rounded-[12px] text-[13px] min-h-[120px] resize-none"
+                  style={{
+                    outline: 'none',
+                    paddingLeft: '16px',
+                    paddingRight: '16px',
+                    paddingTop: '14px',
+                    paddingBottom: '14px',
+                    boxSizing: 'border-box',
+                    backgroundColor: 'rgba(128, 128, 128, 0.1)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                />
+              </div>
+
+              {/* 버튼 */}
+              <div className="flex gap-[12px]">
+                <button
+                  onClick={() => setShowEditSheet(false)}
+                  className="flex-1 py-[14px] rounded-[12px] text-[15px] font-medium"
+                  style={{
+                    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+                    color: 'var(--color-text-primary)',
+                    border: '1px solid var(--color-border)',
+                  }}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={updateMutation.isPending}
+                  className="flex-1 py-[14px] rounded-[12px] text-[15px] font-medium border-0 disabled:opacity-50"
+                  style={{ backgroundColor: '#5E7057', color: '#FFFFFF' }}
+                >
+                  {updateMutation.isPending ? '저장 중...' : '저장하기'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
   );
+}
+
+// Big5 점수에 따른 설명 생성
+function getBig5Description(trait: string, score: number): string {
+  const descriptions: Record<string, Record<string, string>> = {
+    openness: {
+      high: '새로운 경험과 아이디어에 열려있는 하루였어요.',
+      medium: '익숙한 것과 새로운 것 사이에서 균형을 찾았어요.',
+      low: '안정적이고 익숙한 것을 선호하는 하루였어요.',
+    },
+    conscientiousness: {
+      high: '계획적이고 체계적으로 하루를 보냈어요.',
+      medium: '적당히 유연하게 일정을 관리했어요.',
+      low: '자유롭고 즉흥적인 하루를 보냈어요.',
+    },
+    extraversion: {
+      high: '사람들과 어울리며 에너지를 얻었어요.',
+      medium: '혼자만의 시간과 사교 시간의 균형을 맞췄어요.',
+      low: '조용히 혼자만의 시간을 즐겼어요.',
+    },
+    agreeableness: {
+      high: '다른 사람들과 조화롭게 지냈어요.',
+      medium: '자신의 의견도 표현하며 협력했어요.',
+      low: '독립적으로 자신의 길을 갔어요.',
+    },
+    neuroticism: {
+      high: '감정의 기복이 있는 하루였어요.',
+      medium: '대체로 안정적인 감정 상태였어요.',
+      low: '차분하고 평온한 하루를 보냈어요.',
+    },
+  };
+
+  const level = score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low';
+  return descriptions[trait]?.[level] || '';
 }

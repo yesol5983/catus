@@ -4,18 +4,23 @@
  */
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { diaryApi, messageApi } from '../utils/api';
 import { ROUTES } from '../constants/routes';
-import { EMOTION_COLORS, EMOTION_EMOJIS } from '../constants/emotionColors';
+import { EMOTION_COLORS } from '../constants/emotionColors';
+import HomePage from './HomePage';
+import airplaneSvg from '../assets/images/airplane.svg';
 import type { DiaryRandomResponse, Emotion } from '../types';
 
 export default function RandomDiaryPage() {
   const navigate = useNavigate();
-  const [showMessageModal, setShowMessageModal] = useState(false);
   const [messageContent, setMessageContent] = useState('');
+  const [showMessagePreview, setShowMessagePreview] = useState(false);
+  const [showPlaneAnimation, setShowPlaneAnimation] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const maxMessageLength = 200;
 
   // 랜덤 일기 조회 (백엔드 응답: {diaryId, title, date, previewText, thumbnailUrl})
   const { data: diary, isLoading, error, refetch } = useQuery<DiaryRandomResponse>({
@@ -29,24 +34,34 @@ export default function RandomDiaryPage() {
     refetch();
   };
 
-  // 익명 메시지 보내기 모달 열기
-  const handleSendMessageClick = () => {
-    setShowMessageModal(true);
+  // 메시지 미리보기
+  const handleMessagePreview = () => {
+    if (!messageContent.trim()) {
+      alert('응원 메시지를 입력해주세요!');
+      return;
+    }
+    setShowMessagePreview(true);
   };
 
   // 익명 메시지 전송 (백엔드: POST /api/message/send)
-  const handleSendMessage = async () => {
+  const handleConfirmSend = async () => {
     if (!messageContent.trim() || !diary) return;
 
     setIsSending(true);
     try {
+      // 종이비행기 애니메이션 시작
+      setShowPlaneAnimation(true);
+
       // 백엔드 파라미터: diaryId, content
       await messageApi.send(diary.diaryId, messageContent);
-      alert('응원 메시지를 전달했어요! 😊');
-      setShowMessageModal(false);
-      setMessageContent('');
+
+      // 애니메이션 후 페이지 이동
+      setTimeout(() => {
+        navigate(ROUTES.HOME);
+      }, 2000);
     } catch (error) {
       console.error('Failed to send message:', error);
+      setShowPlaneAnimation(false);
       alert('메시지 전송에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsSending(false);
@@ -56,147 +71,325 @@ export default function RandomDiaryPage() {
   // 로딩 중
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#59B464] mx-auto mb-4"></div>
-          <p className="text-gray-600">다른 사람의 일기를 찾고 있어요...</p>
+      <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <HomePage />
         </div>
-      </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E7057] mx-auto mb-4"></div>
+            <p style={{ color: 'var(--color-text-secondary)' }}>다른 사람의 일기를 찾고 있어요...</p>
+          </div>
+        </div>
+      </>
     );
   }
 
   // 에러 또는 일기 없음
   if (error || !diary) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3] flex items-center justify-center">
-        <div className="text-center p-8">
-          <p className="text-gray-600 mb-6">아직 공유된 일기가 없어요 😢</p>
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="px-6 py-3 bg-[#59B464] text-white rounded-full hover:bg-[#4a9654] transition-colors"
-          >
-            홈으로 돌아가기
-          </button>
+      <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <HomePage />
         </div>
-      </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="text-center p-8">
+            <p style={{ color: 'var(--color-text-secondary)' }} className="mb-6">
+              아직 공유된 일기가 없어요 😢
+            </p>
+            <button
+              onClick={() => navigate(ROUTES.HOME)}
+              className="px-6 py-3 bg-[#5E7057] text-white rounded-lg hover:opacity-90 transition-colors"
+            >
+              홈으로 돌아가기
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
-  // 백엔드 응답에 emotion 필드 없음 - 기본값 사용
-  const emotionColor = '#ccc';
-  const emotionEmoji = '📝';
+  // 날짜 포맷팅
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}월 ${date.getDate()}일 작성됨`;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3]">
-      {/* 헤더 */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="text-gray-600 hover:text-gray-800"
-          >
-            ← 뒤로
-          </button>
-          <h1 className="text-lg font-semibold text-gray-800">랜덤 그림일기</h1>
-          <button
-            onClick={handleRefresh}
-            className="text-[#59B464] hover:text-[#4a9654] font-medium"
-          >
-            다른 일기
-          </button>
-        </div>
+    <>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <HomePage />
       </div>
 
-      {/* 일기 내용 */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* 날짜 */}
-        <div className="text-center mb-4">
-          <p className="text-gray-500 text-sm">
-            {new Date(diary.date).toLocaleDateString('ko-KR', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
-        </div>
-
-        {/* 제목 */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100">
-            <span className="text-2xl">{emotionEmoji}</span>
-            <span className="font-medium text-gray-800">{diary.title}</span>
-          </div>
-        </div>
-
-        {/* 일기 이미지 (백엔드 필드: thumbnailUrl) */}
-        {diary.thumbnailUrl && (
-          <div className="mb-6 rounded-2xl overflow-hidden shadow-lg">
-            <img
-              src={diary.thumbnailUrl}
-              alt="Diary illustration"
-              className="w-full h-auto"
-            />
-          </div>
-        )}
-
-        {/* 일기 미리보기 (백엔드 필드: previewText) */}
-        <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-          <p className="text-gray-800 leading-relaxed whitespace-pre-wrap">
-            {diary.previewText}
-          </p>
-        </div>
-
-        {/* 익명 메시지 보내기 버튼 */}
-        <div className="text-center">
-          <button
-            onClick={handleSendMessageClick}
-            className="px-8 py-3 bg-[#59B464] text-white rounded-full hover:bg-[#4a9654] transition-colors shadow-md"
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          isolation: 'isolate',
+        }}
+      >
+        {!showPlaneAnimation && (
+          <motion.div
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+                       rounded-[24px] w-[90%] max-w-[360px]
+                       flex flex-col shadow-2xl overflow-hidden"
+            style={{ backgroundColor: 'var(--color-bg-card)' }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            onClick={(e) => e.stopPropagation()}
           >
-            💌 응원 메시지 보내기
-          </button>
-        </div>
-      </div>
-
-      {/* 익명 메시지 모달 */}
-      {showMessageModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800">익명 응원 메시지</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              작성자에게 따뜻한 응원의 메시지를 보내보세요!
-            </p>
-            <textarea
-              value={messageContent}
-              onChange={(e) => setMessageContent(e.target.value)}
-              placeholder="응원의 한마디를 남겨주세요..."
-              className="w-full h-32 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-[#59B464] mb-4"
-              maxLength={200}
-            />
-            <div className="text-right text-sm text-gray-500 mb-4">
-              {messageContent.length}/200
+            {/* 헤더 */}
+            <div className="px-[16px] pt-[12px] pb-[12px] flex items-start justify-between">
+              <div className="text-left">
+                <h2
+                  className="text-[13px] font-semibold"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  누군가의 그림일기
+                </h2>
+                <p
+                  className="text-[11px] mt-[2px]"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {diary.date && formatDate(diary.date)}
+                </p>
+              </div>
+              <div className="flex items-center gap-[8px]">
+                {/* 새로고침 버튼 */}
+                <button
+                  onClick={handleRefresh}
+                  className="text-[20px] leading-none bg-transparent border-0 hover:opacity-70 transition-opacity"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  ↻
+                </button>
+                {/* 닫기 버튼 */}
+                <button
+                  onClick={() => navigate(ROUTES.HOME)}
+                  className="text-[26px] leading-none bg-transparent border-0"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowMessageModal(false);
-                  setMessageContent('');
+
+            {/* 그림 + 제목 */}
+            <div className="px-[16px] mb-[16px]">
+              <div
+                className="p-[12px] rounded-xl shadow-sm border"
+                style={{
+                  backgroundColor: 'var(--color-bg-card)',
+                  borderColor: 'var(--color-border)',
                 }}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors"
-                disabled={isSending}
               >
-                취소
-              </button>
-              <button
-                onClick={handleSendMessage}
-                disabled={!messageContent.trim() || isSending}
-                className="flex-1 px-4 py-3 bg-[#59B464] text-white rounded-full hover:bg-[#4a9654] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                {isSending ? '전송 중...' : '전송'}
-              </button>
+                {diary.thumbnailUrl ? (
+                  <img
+                    src={diary.thumbnailUrl}
+                    alt="일기 그림"
+                    className="w-full h-[260px] rounded-md object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-full h-[260px] rounded-md flex items-center justify-center"
+                    style={{ backgroundColor: '#F9F9F9' }}
+                  >
+                    <span style={{ color: '#8B9A8E' }}>일기 그림</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-[12px] flex justify-center">
+                <div
+                  style={{
+                    backgroundColor:
+                      (diary as any).emotion
+                        ? EMOTION_COLORS[(diary as any).emotion as Emotion]
+                        : '#9E9E9E',
+                  }}
+                  className="px-[4px] rounded-[4px] shadow-sm inline-block"
+                >
+                  <p
+                    className="text-[10px] font-bold text-[#FFFFFF]"
+                    style={{ letterSpacing: '0.3px' }}
+                  >
+                    {diary.title || '오늘의 일기'}
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
+
+            {/* 미리보기 텍스트 */}
+            {diary.previewText && (
+              <div className="px-[16px] mb-[12px]">
+                <p
+                  className="text-[12px] leading-relaxed"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {diary.previewText}
+                </p>
+              </div>
+            )}
+
+            {/* 응원 메시지 입력 영역 */}
+            <div className="px-[16px] pb-[20px]">
+              {!showMessagePreview ? (
+                <>
+                  <p
+                    className="text-[12px] mb-[8px] text-left"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    따뜻한 응원의 메시지를 남겨주세요. ({maxMessageLength}자 이내)
+                  </p>
+
+                  {/* 입력창 */}
+                  <textarea
+                    className="w-full px-[12px] py-[8px] text-sm rounded-[8px] border focus:outline-none resize-none mb-[8px]"
+                    style={{
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-bg-card)',
+                      color: 'var(--color-text-primary)',
+                      minHeight: '80px',
+                    }}
+                    placeholder="익명의 응원 메시지 작성..."
+                    value={messageContent}
+                    onChange={(e) =>
+                      setMessageContent(e.target.value.slice(0, maxMessageLength))
+                    }
+                    maxLength={maxMessageLength}
+                  />
+
+                  {/* 글자 수 + 전송 버튼 */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className="text-[11px]"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {messageContent.length}/{maxMessageLength}
+                    </span>
+                    <button
+                      onClick={handleMessagePreview}
+                      className="px-[16px] py-[8px] bg-[#2D2D2D] text-[#FFFFFF] text-sm font-medium rounded-[8px] hover:bg-gray-800 transition-colors"
+                    >
+                      전송
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* 미리보기 */}
+                  <div className="mb-[12px]">
+                    <p
+                      className="text-[13px] mb-[4px]"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {messageContent}
+                    </p>
+                    <p
+                      className="text-[11px]"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      - 익명의 집사로부터
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end gap-[8px]">
+                    <button
+                      onClick={() => setShowMessagePreview(false)}
+                      className="px-[20px] py-[8px] bg-[#2D2D2D] text-[#FFFFFF] text-sm font-medium rounded-[8px] hover:bg-gray-800 transition-colors"
+                      disabled={isSending}
+                    >
+                      수정
+                    </button>
+                    <button
+                      onClick={handleConfirmSend}
+                      className="px-[20px] py-[8px] bg-[#2D2D2D] text-[#FFFFFF] text-sm font-medium rounded-[8px] hover:bg-gray-800 transition-colors disabled:opacity-50"
+                      disabled={isSending}
+                    >
+                      {isSending ? '전송 중...' : '확인'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* 종이비행기 애니메이션 */}
+      {showPlaneAnimation && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            pointerEvents: 'none',
+          }}
+        >
+          <motion.div
+            style={{
+              position: 'absolute',
+              bottom: '20%',
+              right: '10%',
+              width: '120px',
+              height: '120px',
+            }}
+            initial={{
+              x: 0,
+              y: 0,
+              opacity: 1,
+              scale: 0.3,
+              rotate: -30,
+            }}
+            animate={{
+              x: [0, -600, 400],
+              y: [0, -100, -500],
+              opacity: [1, 1, 1, 1, 0],
+              scale: [0.3, 1, 1.2, 1.2, 1],
+              rotate: [-30, -10, 45],
+            }}
+            transition={{
+              duration: 2,
+              times: [0, 0.3, 0.6, 0.9, 1],
+              ease: 'easeInOut',
+            }}
+          >
+            <img
+              src={airplaneSvg}
+              alt="airplane"
+              style={{
+                width: '80px',
+                height: '80px',
+              }}
+            />
+          </motion.div>
         </div>
       )}
-    </div>
+    </>
   );
 }

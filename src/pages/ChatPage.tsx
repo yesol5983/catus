@@ -236,7 +236,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="fixed inset-0 bg-[#fef9f1]">
+    <div className="fixed inset-0" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       <style>{`
         @keyframes typingDot {
           0%, 60%, 100% {

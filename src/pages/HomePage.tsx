@@ -1,90 +1,112 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { ROUTES } from "../constants/routes";
 import { useTutorial } from "../contexts/TutorialContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { messageApi } from "../utils/api";
 import Tutorial from "./Tutorial";
-import type { AnonymousMessage } from "../types";
 import api from "../utils/api";
 
-import catImage from "../assets/images/cat.png";
-import cactus1 from "../assets/images/catus1.png";
-import cactus2 from "../assets/images/catus2.png";
-import cactus3 from "../assets/images/catus3.png";
-import cactus4 from "../assets/images/catus4.png";
-import book from "../assets/images/book.png";
+import catImage from "../assets/images/cat1.png";
+import catMessageImage from "../assets/images/cat_message.png";
+import cactusImage from "../assets/images/cactus.png";
+import bookClose from "../assets/images/book_close.png";
+import bookOpen from "../assets/images/book_open.png";
 import bg from "../assets/images/home-background.png";
 import bgDark from "../assets/images/background-dark.png";
 import settingIcon from "../assets/images/setting.png";
-import airplaneImage from "../assets/images/airplane.png";
+import airplaneSvg from "../assets/images/airplane.svg";
+import exclamationMark from "../assets/images/exclamation_mark.png";
 
 interface HomePageProps {
   hideButtons?: boolean;
+  backgroundOnly?: boolean;
 }
 
-export default function HomePage({ hideButtons = false }: HomePageProps) {
+export default function HomePage({ hideButtons = false, backgroundOnly = false }: HomePageProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { isTutorialCompleted, startTutorial } = useTutorial();
   const { isDarkMode } = useDarkMode();
 
+  // 현재 페이지가 캘린더인지 확인
+  const isCalendarOpen = location.pathname === ROUTES.CALENDAR;
+
   // ====== LocalStorage ======
-  const [receivedMessages] = useLocalStorage<AnonymousMessage[]>("received_messages", []);
-  const [lastCheckedCount, setLastCheckedCount] = useLocalStorage<number>(
-    "last_checked_received_count",
-    0
-  );
   const [supportTutorialShown, setSupportTutorialShown] = useLocalStorage<boolean>(
     "support_tutorial_shown",
     false
   );
+  const [airplaneTutorialShown, setAirplaneTutorialShown] = useLocalStorage<boolean>(
+    "airplane_tutorial_shown",
+    false
+  );
 
   // ====== 상태 ======
-  const [hasNewMessage, setHasNewMessage] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showSupportTutorial, setShowSupportTutorial] = useState(false);
+  const [showAirplaneTutorial, setShowAirplaneTutorial] = useState(false);
+  const [catAnimationKey, setCatAnimationKey] = useState(0);
+  const [isBookOpening, setIsBookOpening] = useState(false);
   const [isBig5Checked, setIsBig5Checked] = useState(false);
+
+  // TODO: 백엔드에서 hasRandomDiary 플래그 받아오기
+  const [hasRandomDiary, setHasRandomDiary] = useState(true);
+
+  // ====== 백엔드 API로 unreadCount 조회 ======
+  const { data: messagesData } = useQuery({
+    queryKey: ['messages', 'received'],
+    queryFn: () => messageApi.getReceived(0, 1),
+    enabled: !backgroundOnly,
+    refetchInterval: 30000,
+  });
+
+  const unreadCount = messagesData?.unreadCount || 0;
+  const hasNewMessage = unreadCount > 0;
 
   // ====== Big5 데이터 확인 ======
   useEffect(() => {
+    if (backgroundOnly) return;
+
     const checkBig5Data = async () => {
       try {
-        // 백엔드에서 Big5 데이터 조회
         await api.big5.getCurrent();
         console.log('✅ Big5 데이터 존재 - 홈페이지 유지');
         setIsBig5Checked(true);
       } catch (error: any) {
         console.log('❌ Big5 데이터 없음 - Big5 테스트로 이동');
-        // Big5 데이터가 없으면 테스트 페이지로 이동
         navigate('/big5/test');
       }
     };
 
     checkBig5Data();
-  }, [navigate]);
+  }, [backgroundOnly, navigate]);
 
-  // ====== 새 응원 메시지 확인 ======
+  // ====== 랜덤 일기 확인 및 튜토리얼 표시 ======
   useEffect(() => {
-    if (receivedMessages.length > 0 && receivedMessages.length > lastCheckedCount) {
-      console.log("📨 새 응원 메시지 감지!");
-      setHasNewMessage(true);
+    if (backgroundOnly) return;
 
-      // ✅ 처음 응원 메시지를 받은 경우 한 번만 튜토리얼 표시
-      if (!supportTutorialShown) {
+    if (hasRandomDiary && !supportTutorialShown) {
+      setTimeout(() => {
         setShowSupportTutorial(true);
-      }
+      }, 300);
     }
-  }, [receivedMessages.length, lastCheckedCount, supportTutorialShown]);
+  }, [backgroundOnly, hasRandomDiary, supportTutorialShown]);
 
-  const handleMessageCheck = async (): Promise<void> => {
-    setLastCheckedCount(receivedMessages.length);
-    setHasNewMessage(false);
-  };
+  // ====== 새 응원 메시지 확인 → 튜토리얼 표시 ======
+  useEffect(() => {
+    if (backgroundOnly) return;
 
-  // 읽지 않은 메시지 개수
-  const unreadCount = receivedMessages.length - lastCheckedCount;
+    if (hasNewMessage && !airplaneTutorialShown) {
+      setTimeout(() => {
+        setShowAirplaneTutorial(true);
+      }, 2500);
+    }
+  }, [backgroundOnly, hasNewMessage, airplaneTutorialShown]);
 
   // ====== 반응형 위치/스케일 ======
   const aspectRatio = window.innerHeight / window.innerWidth;
@@ -99,10 +121,8 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
       ? baseScale * 0.8
       : baseScale * 0.7;
   const heightRatio = Math.min(aspectRatio * 1.2, 1.3);
-  const cactusTop = `${67 - (heightRatio - 1) * 1.5}%`;
   const cactusScale = 0.9 + (heightRatio - 1) * 0.5;
 
-  // ====== 새로운 상호작용 핸들러 ======
   const openChat = (): void => navigate(ROUTES.CHAT);
 
   // 선인장 클릭 → BIG5 통계
@@ -110,22 +130,43 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
     navigate(ROUTES.BIG5_STATS);
   };
 
-  // 고양이 "달이" 클릭 → 랜덤 그림일기 보기 (백엔드에서 활성화 시에만)
+  // 책 클릭 → 캘린더 (열림/닫힘 애니메이션)
+  const handleBookClick = (): void => {
+    if (isCalendarOpen) {
+      navigate(ROUTES.HOME);
+    } else {
+      setIsBookOpening(true);
+      setTimeout(() => {
+        navigate(ROUTES.CALENDAR);
+        setTimeout(() => setIsBookOpening(false), 100);
+      }, 600);
+    }
+  };
+
+  // 고양이 클릭 → 3번 클릭 시 RandomDiaryPage로 이동
   const handleCatClick = (): void => {
-    // TODO: 백엔드에서 hasRandomDiary 플래그가 true일 때만 작동
-    navigate(ROUTES.RANDOM_DIARY);
+    if (!hasRandomDiary) return;
+
+    setCatAnimationKey(prev => prev + 1);
+    setClickCount((c) => c + 1);
+
+    if (clickCount + 1 >= 3) {
+      setTimeout(() => {
+        setHasRandomDiary(false);
+        setClickCount(0);
+        navigate(ROUTES.RANDOM_DIARY);
+      }, 400);
+    }
   };
 
-  // 종이비행기 클릭 → 익명 메시지 수신함
-  const handleAirplaneClick = async (): Promise<void> => {
-    await handleMessageCheck();
-    navigate(ROUTES.LETTER);
+  // 종이비행기 클릭 → 메시지 페이지
+  const handleAirplaneClick = (): void => {
+    navigate(ROUTES.MESSAGES);
   };
-
-  const cactusImages = [cactus1, cactus2, cactus3, cactus4];
 
   // ====== 튜토리얼 자동 시작 ======
   useEffect(() => {
+    if (backgroundOnly) return;
     if (location.pathname !== ROUTES.HOME) return;
 
     let timeoutId: NodeJS.Timeout | null = null;
@@ -149,19 +190,19 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
       checkFontLoaded();
     }
 
-    // Cleanup: 컴포넌트 언마운트 시 setTimeout 취소
     return () => {
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
     };
-  }, [isTutorialCompleted, location.pathname, startTutorial]);
+  }, [backgroundOnly, isTutorialCompleted, location.pathname, startTutorial]);
 
   const handleTutorialComplete = (): void => setShowTutorial(false);
 
-  // 나머지 JSX는 원본과 동일하게 유지 (너무 길어서 생략)
+  // ====== 렌더 ======
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-end" style={{ backgroundColor: '#fef9f1' }}>
+    <div className="relative w-full h-screen overflow-hidden flex flex-col items-center justify-end" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+      {/* 배경 */}
       <img
         src={isDarkMode ? bgDark : bg}
         alt="background"
@@ -169,103 +210,473 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
         draggable="false"
       />
 
-      {showTutorial && location.pathname === ROUTES.HOME && (
+      {/* 튜토리얼 */}
+      {!backgroundOnly && showTutorial && location.pathname === ROUTES.HOME && (
         <Tutorial onComplete={handleTutorialComplete} />
       )}
 
-      {/* 선인장 그룹 - BIG5 통계 */}
-      <div
-        className="cactus-group absolute z-10 flex justify-center items-end gap-[5vw]"
-        style={{
-          top: cactusTop,
-          left: "50%",
-          transform: `translate(-50%, -95%) scale(${cactusScale})`,
-        }}
-      >
-        {cactusImages.map((img, idx) => (
-          <button
-            key={idx}
-            onClick={handleCactusClick}
-            className="group hover:scale-110 active:scale-95 transition-transform bg-transparent p-0 border-0"
-          >
-            <img
-              src={img}
-              alt={`cactus-${idx + 1}`}
-              className="object-contain drop-shadow-lg w-[8vw] min-w-[40px] max-w-[70px]"
-              style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
-            />
-          </button>
-        ))}
-      </div>
-
-      {/* 종이비행기 - 익명 메시지 수신함 */}
-      <button
-        onClick={handleAirplaneClick}
-        className="airplane-button absolute z-10 bg-transparent p-0 border-0 hover:scale-110 active:scale-95 transition-transform"
-        style={{
-          top: "25%",
-          left: "10%",
-        }}
-      >
+      {/* 응원일기 처음 알림 튜토리얼 */}
+      {!backgroundOnly && showSupportTutorial && (
         <motion.div
-          className="relative"
-          animate={hasNewMessage ? {
-            y: [0, -10, 0],
-          } : {}}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: "easeInOut"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 9999,
+            pointerEvents: 'none'
           }}
         >
-          <img
-            src={airplaneImage}
-            alt="airplane"
-            className="object-contain drop-shadow-lg w-[12vw] min-w-[50px] max-w-[80px]"
-            style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
+          {/* 오버레이 배경 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              pointerEvents: 'all'
+            }}
+            onClick={() => {
+              setSupportTutorialShown(true);
+              setShowSupportTutorial(false);
+            }}
           />
-          {hasNewMessage && unreadCount > 0 && (
-            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </div>
-          )}
-        </motion.div>
-      </button>
 
-      {/* 일기장(다이어리) - 캘린더로 이동 */}
+          {/* 고양이 스팟라이트 */}
+          {(() => {
+            const catElement = document.querySelector('.cat-image');
+            if (!catElement) return null;
+            const rect = catElement.getBoundingClientRect();
+
+            if (rect.width === 0 || rect.height === 0) return null;
+
+            const catCenterX = rect.left + rect.width / 2;
+            const messageWidth = 240;
+            const padding = 10;
+
+            const idealMessageLeft = catCenterX - messageWidth / 2;
+            const messageLeft = Math.max(20, Math.min(window.innerWidth - messageWidth - 20, idealMessageLeft));
+            const messageTop = rect.top - padding - 10;
+            const arrowLeft = catCenterX - messageLeft;
+
+            return (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: rect.top - padding + 5,
+                    left: rect.left - padding,
+                    width: rect.width + (padding * 2),
+                    height: rect.height + (padding * 2),
+                    borderRadius: '20px',
+                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                    pointerEvents: 'none',
+                    zIndex: 10000,
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+
+                {/* 메시지 박스 */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    bottom: `${window.innerHeight - messageTop}px`,
+                    left: `${messageLeft}px`,
+                    width: `${messageWidth}px`,
+                    pointerEvents: 'all',
+                    zIndex: 10001
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      background: 'white',
+                      borderRadius: '16px',
+                      padding: '13px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {/* 화살표 */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '-7px',
+                        left: `${arrowLeft}px`,
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '9px solid transparent',
+                        borderRight: '9px solid transparent',
+                        borderTop: '9px solid white'
+                      }}
+                    />
+
+                    <p
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '1.5',
+                        color: '#333',
+                        marginBottom: '12px',
+                        whiteSpace: 'pre-line'
+                      }}
+                    >
+                      달이가 편지를 들고 있어요 ✉️{'\n'}달이에게 편지를 받아봐요
+                    </p>
+
+                    <button
+                      onClick={() => {
+                        setSupportTutorialShown(true);
+                        setShowSupportTutorial(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#666',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      달이를 3번 쓰다듬어 봐요
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            );
+          })()}
+        </motion.div>
+      )}
+
+      {/* 종이비행기 튜토리얼 */}
+      {!backgroundOnly && showAirplaneTutorial && hasNewMessage && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            zIndex: 10500,
+            pointerEvents: 'none'
+          }}
+        >
+          {(() => {
+            const airplaneElement = document.querySelector('.airplane-container');
+            if (!airplaneElement) return null;
+            const rect = airplaneElement.getBoundingClientRect();
+
+            if (rect.width === 0 || rect.height === 0) return null;
+
+            const airplaneCenterX = rect.left + rect.width / 2;
+            const messageWidth = 240;
+            const padding = 15;
+
+            const idealMessageLeft = airplaneCenterX - messageWidth / 2;
+            const messageLeft = Math.max(20, Math.min(window.innerWidth - messageWidth - 20, idealMessageLeft));
+            const messageTop = rect.bottom + padding + 10;
+            const arrowLeft = airplaneCenterX - messageLeft;
+
+            const handleClose = () => {
+              setAirplaneTutorialShown(true);
+              setShowAirplaneTutorial(false);
+            };
+
+            return (
+              <>
+                {/* 오버레이 배경 */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    pointerEvents: 'all'
+                  }}
+                  onClick={handleClose}
+                />
+
+                {/* 스팟라이트 */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    position: 'absolute',
+                    top: rect.top - padding,
+                    left: rect.left - padding,
+                    width: rect.width + (padding * 2),
+                    height: rect.height + (padding * 2),
+                    borderRadius: '50%',
+                    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)',
+                    pointerEvents: 'none',
+                    zIndex: 10501,
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+
+                {/* 메시지 박스 */}
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    position: 'absolute',
+                    top: `${messageTop}px`,
+                    left: `${messageLeft}px`,
+                    width: `${messageWidth}px`,
+                    pointerEvents: 'all',
+                    zIndex: 10502
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div
+                    style={{
+                      position: 'relative',
+                      background: 'white',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+                      textAlign: 'center'
+                    }}
+                  >
+                    {/* 화살표 */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '-7px',
+                        left: `${arrowLeft}px`,
+                        transform: 'translateX(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderLeft: '9px solid transparent',
+                        borderRight: '9px solid transparent',
+                        borderBottom: '9px solid white'
+                      }}
+                    />
+
+                    <p
+                      style={{
+                        fontSize: '15px',
+                        lineHeight: '1.5',
+                        color: '#333',
+                        marginBottom: '12px'
+                      }}
+                    >
+                      누군가가 메세지를 날렸어요
+                    </p>
+
+                    <button
+                      onClick={handleClose}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: '#5F6F52',
+                        border: 'none',
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        borderRadius: '8px',
+                        transition: 'opacity 0.2s'
+                      }}
+                    >
+                      확인
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            );
+          })()}
+        </motion.div>
+      )}
+
+      {/* 선인장 - Big5 통계 */}
       <button
-        onClick={() => navigate(ROUTES.CALENDAR)}
-        className="diary-book absolute z-10 bg-transparent p-0 border-0 hover:scale-105 active:scale-95 transition-transform"
-        style={{ bottom: "8%", left: "48%", transform: "translateX(-50%)" }}
+        onClick={handleCactusClick}
+        className="cactus-group absolute z-10 hover:scale-110 active:scale-95 transition-transform bg-transparent p-0 border-0"
+        style={{
+          top: "34%",
+          left: "20%",
+          transform: `translateY(-100%) scale(${cactusScale})`,
+        }}
       >
         <img
-          src={book}
-          alt="diary"
-          className="object-contain drop-shadow-xl w-[18vw] min-w-[80px] max-w-[150px]"
+          src={cactusImage}
+          alt="cactus"
+          className="object-contain drop-shadow-lg w-[15vw] min-w-[80px] max-w-[130px]"
           style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
         />
       </button>
 
-      {/* 고양이 "달이" - 랜덤 일기 (백엔드에서 활성화 시) */}
+      {/* 종이비행기 - 응원 메시지 알림 */}
+      {!backgroundOnly && hasNewMessage && (
+        <motion.div
+          className="airplane-container absolute z-30 cursor-pointer"
+          style={{
+            top: "42%",
+            right: "10%",
+          }}
+          initial={{
+            x: -window.innerWidth * 0.95,
+            y: -window.innerHeight * 0.3,
+            opacity: 0,
+            rotate: -45
+          }}
+          animate={{
+            x: 0,
+            y: 0,
+            opacity: 1,
+            rotate: 0
+          }}
+          transition={{
+            duration: 2,
+            ease: [0.34, 1.56, 0.64, 1],
+            x: {
+              type: "spring",
+              damping: 20,
+              stiffness: 50
+            },
+            y: {
+              type: "spring",
+              damping: 25,
+              stiffness: 40
+            },
+            rotate: {
+              duration: 2,
+              ease: "easeOut"
+            }
+          }}
+          onClick={handleAirplaneClick}
+        >
+          {/* 종이비행기 */}
+          <motion.img
+            src={airplaneSvg}
+            alt="paper airplane"
+            className="w-[70px] h-[70px] sm:w-[80px] sm:h-[80px] drop-shadow-lg"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          />
+
+          {/* 느낌표 - 깜빡임 */}
+          <motion.img
+            src={exclamationMark}
+            alt="notification"
+            className="absolute -bottom-1 -right-1 w-[20px] h-[20px]"
+            animate={{
+              opacity: [1, 0.3, 1],
+              scale: [1, 0.95, 1]
+            }}
+            transition={{
+              duration: 1,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* 고양이 - 3번 클릭 시 랜덤일기 */}
+      {!backgroundOnly && hasRandomDiary ? (
+        <button
+          onClick={handleCatClick}
+          className="cat-container absolute z-20 bg-transparent p-0 border-0 cursor-pointer"
+          style={{
+            top: "49%",
+            left: "2%",
+            transform: `translateY(-50%) scale(${catScale})`,
+            transformOrigin: "center left",
+          }}
+        >
+          <motion.img
+            src={catMessageImage}
+            alt="cat"
+            className="cat-image object-contain drop-shadow-2xl w-[35vw] min-w-[220px] max-w-[270px]"
+            style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
+            key={catAnimationKey}
+            animate={{
+              y: [0, -20, -10, -15, 0],
+              scale: [1, 1.05, 1.02, 1.03, 1]
+            }}
+            transition={{
+              duration: 0.6,
+              ease: [0.34, 1.56, 0.64, 1]
+            }}
+          />
+        </button>
+      ) : (
+        <div
+          className="cat-container absolute z-20"
+          style={{
+            top: "49%",
+            left: "6%",
+            transform: `translateY(-50%) scale(${catScale})`,
+            transformOrigin: "center left",
+          }}
+        >
+          <motion.img
+            src={catImage}
+            alt="cat"
+            className="cat-image object-contain drop-shadow-2xl w-[25vw] min-w-[170px] max-w-[220px]"
+            style={{ filter: isDarkMode ? 'brightness(0.9)' : 'none' }}
+          />
+        </div>
+      )}
+
+      {/* 책 → 달력 (열림/닫힘 애니메이션) */}
       <button
-        onClick={handleCatClick}
-        className="cat-container absolute z-20 bg-transparent p-0 border-0 hover:scale-105 active:scale-95 transition-transform"
-        style={{
-          bottom: "8%",
-          left: "48%",
-          transform: `translate(calc(8vw), 0) scale(${catScale})`,
-          transformOrigin: "bottom left",
-        }}
+        onClick={handleBookClick}
+        className="diary-book absolute z-10 bg-transparent p-0 border-0"
+        style={{ top: "63%", left: "70%", transform: "translate(-50%, -50%)" }}
       >
-        <img
-          src={catImage}
-          alt="cat"
-          className="cat-image object-contain drop-shadow-2xl w-[20vw] min-w-[90px] max-w-[180px]"
-          style={{ filter: isDarkMode ? 'brightness(0.9)' : 'none' }}
+        <motion.img
+          src={isCalendarOpen || isBookOpening ? bookOpen : bookClose}
+          alt="diary"
+          className={`object-contain drop-shadow-xl ${
+            isCalendarOpen || isBookOpening
+              ? 'w-[28vw] min-w-[160px] max-w-[240px]'
+              : 'w-[22vw] min-w-[130px] max-w-[190px]'
+          }`}
+          style={{ filter: isDarkMode ? 'brightness(0.7)' : 'none' }}
+          animate={
+            isBookOpening
+              ? { scale: [1, 1.15, 1.05], rotateY: [0, 15, 0] }
+              : isCalendarOpen
+              ? {}
+              : { scale: 1 }
+          }
+          whileHover={!isBookOpening ? { scale: 1.05 } : {}}
+          whileTap={!isBookOpening ? { scale: 0.95 } : {}}
+          transition={{
+            duration: 0.6,
+            ease: "easeInOut",
+            scale: { duration: 0.6 }
+          }}
         />
       </button>
 
-      {!hideButtons && (
+      {/* 설정 */}
+      {!hideButtons && !backgroundOnly && (
         <button
           onClick={() => navigate(ROUTES.SETTINGS)}
           className="settings-icon absolute top-[4%] right-[4%] flex items-center justify-center z-30 hover:scale-110 transition-transform bg-transparent border-0"
@@ -279,7 +690,8 @@ export default function HomePage({ hideButtons = false }: HomePageProps) {
         </button>
       )}
 
-      {!hideButtons && (
+      {/* 하단 채팅 인풋바 */}
+      {!hideButtons && !backgroundOnly && (
         <div
           className="fixed bottom-0 z-50 cursor-pointer group"
           style={{ width: '70%', padding: '3px', left: '46%', transform: 'translateX(-50%)' }}

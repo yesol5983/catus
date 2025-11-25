@@ -1,16 +1,16 @@
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { useState } from 'react';
 import { ROUTES } from '../constants/routes';
 import { messageApi } from '../utils/api';
-import { formatDate } from '../utils/dateFormat';
-import type { MessageReceivedResponse } from '../types';
+import HomePage from './HomePage';
 
 export default function MessagesPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(0);
 
   // 받은 메시지 조회 (백엔드: GET /api/message/received)
   const { data: messagesData, isLoading, error } = useQuery({
@@ -21,190 +21,422 @@ export default function MessagesPage() {
     retry: 2,
   });
 
-  // 알림 조회 (백엔드: GET /api/message/notifications)
-  const { data: notificationsData } = useQuery({
-    queryKey: ['messages', 'notifications'],
-    queryFn: async () => {
-      return await messageApi.getNotifications();
-    },
-    retry: 2,
-  });
-
   // 메시지 읽음 처리 Mutation (백엔드: PUT /api/message/read/{id})
   const markAsReadMutation = useMutation({
     mutationFn: async (messageId: number) => {
       return await messageApi.markAsRead(messageId);
     },
     onSuccess: () => {
-      // 메시지 목록 및 알림 갱신
       queryClient.invalidateQueries({ queryKey: ['messages', 'received'] });
       queryClient.invalidateQueries({ queryKey: ['messages', 'notifications'] });
     },
     onError: (error: any) => {
       console.error('메시지 읽음 처리 실패:', error);
-      alert(`읽음 처리에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
     },
   });
 
-  const handleMessageClick = (messageId: number, diaryId: number, isRead: boolean) => {
-    // 읽지 않은 메시지면 읽음 처리
-    if (!isRead) {
-      markAsReadMutation.mutate(messageId);
-    }
+  const messages = messagesData?.messages || [];
+  const totalMessages = messages.length;
+  const currentMessage = messages[currentIndex];
 
-    // 일기 상세 페이지로 이동 (diaryId가 있는 경우)
-    if (diaryId) {
-      navigate(`/diary/${diaryId}`);
+  // 현재 메시지가 안읽음이면 읽음 처리
+  useEffect(() => {
+    if (currentMessage && !currentMessage.isRead) {
+      markAsReadMutation.mutate(currentMessage.id);
+    }
+  }, [currentIndex, currentMessage?.id]);
+
+  // 이전 메시지로 이동
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setDirection(-1);
+      setCurrentIndex(currentIndex - 1);
     }
   };
 
-  // Loading state
+  // 다음 메시지로 이동
+  const handleNext = () => {
+    if (currentIndex < totalMessages - 1) {
+      setDirection(1);
+      setCurrentIndex(currentIndex + 1);
+    }
+  };
+
+  // 기본 일기 이미지 생성 (SVG)
+  const createDefaultDiaryImage = (): string => {
+    const svg = `
+      <svg width="260" height="260" xmlns="http://www.w3.org/2000/svg">
+        <rect width="260" height="260" fill="#F9F9F9"/>
+        <text x="50%" y="50%" font-size="20" fill="#8B9A8E" text-anchor="middle" dy=".35em">그림일기</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
+  };
+
+  // 날짜 포맷팅
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    return `${month}월 ${day}일의 그림일기`;
+  };
+
+  // 로딩 중
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#fef9f1] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5F6F52] mx-auto mb-4"></div>
-          <p className="text-gray-600">메시지를 불러오는 중...</p>
+      <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <HomePage />
         </div>
-      </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E7057] mx-auto mb-4"></div>
+            <p style={{ color: 'var(--color-text-secondary)' }}>메시지를 불러오는 중...</p>
+          </div>
+        </div>
+      </>
     );
   }
 
-  // Error state
+  // 에러
   if (error) {
     return (
-      <div className="min-h-screen bg-[#fef9f1] flex flex-col items-center justify-center p-4">
-        <h1 className="text-2xl font-bold mb-4 text-gray-800">😢 메시지를 불러올 수 없습니다</h1>
-        <p className="text-gray-600 mb-8">잠시 후 다시 시도해주세요.</p>
-        <button
-          onClick={() => navigate(ROUTES.HOME)}
-          className="px-6 py-3 bg-[#5F6F52] text-white rounded-lg hover:opacity-90 transition-opacity"
+      <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <HomePage />
+        </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          홈으로 돌아가기
-        </button>
-      </div>
+          <div className="text-center p-8">
+            <p style={{ color: 'var(--color-text-secondary)' }} className="mb-6">
+              메시지를 불러올 수 없습니다 😢
+            </p>
+            <button
+              onClick={() => navigate(ROUTES.HOME)}
+              className="px-6 py-3 bg-[#5E7057] text-white rounded-lg hover:opacity-90 transition-colors"
+            >
+              홈으로 돌아가기
+            </button>
+          </div>
+        </div>
+      </>
     );
   }
 
-  const messages = messagesData?.messages || [];
-  const unreadCount = messagesData?.unreadCount || 0;
-  const totalPages = messagesData?.totalPages || 1;
+  // 메시지 없음
+  if (totalMessages === 0) {
+    return (
+      <>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+          <HomePage />
+        </div>
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <motion.div
+            className="rounded-[24px] w-[90%] max-w-[360px] p-[24px] text-center"
+            style={{ backgroundColor: 'var(--color-bg-card)' }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className="text-5xl mb-4">📭</div>
+            <p style={{ color: 'var(--color-text-primary)' }} className="text-[15px] font-semibold mb-2">
+              받은 메시지가 없습니다
+            </p>
+            <p style={{ color: 'var(--color-text-secondary)' }} className="text-[13px] mb-6">
+              다른 사람들이 보낸 응원 메시지가 여기에 표시됩니다
+            </p>
+            <button
+              onClick={() => navigate(ROUTES.HOME)}
+              className="px-6 py-3 bg-[#5E7057] text-white rounded-lg hover:opacity-90 transition-colors"
+            >
+              홈으로 돌아가기
+            </button>
+          </motion.div>
+        </div>
+      </>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[#fef9f1]">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="text-2xl text-gray-700 hover:text-gray-900"
-          >
-            ‹
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">받은 메시지</h1>
-          <div className="w-8"></div> {/* Spacer for centering */}
-        </div>
+    <>
+      {/* 백그라운드로 HomePage 렌더링 */}
+      <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+        <HomePage />
       </div>
 
-      {/* Unread Count Banner */}
-      {unreadCount > 0 && (
-        <div className="bg-blue-50 border-b border-blue-200 px-4 py-3">
-          <div className="max-w-2xl mx-auto flex items-center gap-2">
-            <span className="text-blue-600 font-semibold">📬</span>
-            <span className="text-blue-800 text-sm">
-              읽지 않은 메시지가 <strong>{unreadCount}개</strong> 있습니다
-            </span>
-          </div>
-        </div>
-      )}
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <motion.div
+          className="relative rounded-[24px] w-[90%] max-w-[360px] max-h-[90vh] flex flex-col shadow-2xl overflow-hidden"
+          style={{ backgroundColor: 'var(--color-bg-card)', perspective: '1200px' }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 편지 봉투 뚜껑 (직사각형) */}
+          <motion.div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '80px',
+              backgroundColor: '#C9A961',
+              borderRadius: '24px 24px 0 0',
+              transformOrigin: 'top center',
+              transformStyle: 'preserve-3d',
+              zIndex: 10,
+              pointerEvents: 'none',
+            }}
+            initial={{ rotateX: 0, opacity: 1 }}
+            animate={{ rotateX: -120, opacity: 0 }}
+            transition={{ delay: 0.3, duration: 0.7, ease: 'easeInOut' }}
+          />
 
-      {/* Messages List */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {messages.length === 0 ? (
-          <div className="text-center py-16">
-            <div className="text-6xl mb-4">📭</div>
-            <p className="text-gray-600 text-lg mb-2">받은 메시지가 없습니다</p>
-            <p className="text-gray-500 text-sm">
-              친구들이 보낸 익명 메시지가 여기에 표시됩니다
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                onClick={() => handleMessageClick(message.id, message.diaryId, message.isRead)}
-                className={`
-                  bg-white rounded-2xl p-5 shadow-md cursor-pointer
-                  transition-all hover:shadow-lg hover:scale-[1.02]
-                  ${!message.isRead ? 'border-2 border-blue-400' : 'border border-gray-200'}
-                `}
+          {/* 편지 내용 */}
+          <motion.div
+            className="overflow-y-auto flex-1"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7, duration: 0.4 }}
+          >
+            {/* 헤더 */}
+            <div className="px-[16px] pt-[12px] pb-[12px] flex items-start justify-between">
+              <div className="text-left">
+                <h2
+                  className="text-[13px] font-semibold"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  {currentMessage?.receivedAt
+                    ? formatDate(currentMessage.receivedAt)
+                    : '응원 메시지'}
+                </h2>
+              </div>
+              <button
+                onClick={() => navigate(ROUTES.HOME)}
+                className="text-[26px] leading-none bg-transparent border-0"
+                style={{ color: 'var(--color-text-secondary)' }}
               >
-                {/* Message Header */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">
-                      {message.isRead ? '✉️' : '💌'}
-                    </span>
-                    {!message.isRead && (
-                      <span className="px-2 py-1 bg-blue-500 text-white text-xs font-semibold rounded-full">
-                        NEW
-                      </span>
-                    )}
+                ×
+              </button>
+            </div>
+
+            {/* 그림일기 이미지 */}
+            <div className="px-[16px] mb-[12px]" style={{ position: 'relative', overflow: 'hidden' }}>
+              <AnimatePresence initial={false} custom={direction} mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  custom={direction}
+                  initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                  className="p-[12px] rounded-xl shadow-sm border"
+                  style={{
+                    backgroundColor: 'var(--color-bg-card)',
+                    borderColor: 'var(--color-border)',
+                  }}
+                >
+                  <img
+                    src={(currentMessage as any)?.thumbnailUrl || createDefaultDiaryImage()}
+                    alt="일기 그림"
+                    className="w-full h-[260px] rounded-md object-cover"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            {/* 네비게이션 영역 */}
+            {totalMessages > 1 && (
+              <div
+                className="mb-[12px] px-[16px] flex items-center justify-between"
+                style={{
+                  zIndex: 50,
+                  position: 'relative',
+                }}
+              >
+                {/* 좌측 화살표 */}
+                <button
+                  onClick={handlePrevious}
+                  disabled={currentIndex === 0}
+                  className="w-[32px] h-[32px] rounded-full bg-[#EAEAEA] text-gray-800 flex items-center justify-center
+                            disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#DADADA] transition-all"
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '1',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)',
+                    border: 'none',
+                  }}
+                >
+                  ‹
+                </button>
+
+                {/* 페이지 인디케이터 */}
+                {totalMessages <= 7 ? (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      minWidth: '80px',
+                      height: '32px',
+                    }}
+                  >
+                    {messages.map((_, index) => (
+                      <div
+                        key={index}
+                        style={{
+                          width: index === currentIndex ? '8px' : '6px',
+                          height: index === currentIndex ? '8px' : '6px',
+                          borderRadius: '50%',
+                          backgroundColor: index === currentIndex ? '#000000' : '#9CA3AF',
+                          flexShrink: 0,
+                          transition: 'all 0.3s',
+                        }}
+                      />
+                    ))}
                   </div>
-                  <span className="text-sm text-gray-500">
-                    {formatDate(message.receivedAt, 'datetime')}
-                  </span>
-                </div>
-
-                {/* Message Content */}
-                <p className="text-gray-800 leading-relaxed mb-3 whitespace-pre-wrap">
-                  {message.content}
-                </p>
-
-                {/* Diary Link */}
-                {message.diaryId && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>📖</span>
-                    <span>관련 일기 보기</span>
+                ) : (
+                  <div
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'flex-start',
+                      width: '80px',
+                      height: '32px',
+                      overflow: 'hidden',
+                      paddingLeft: '6px',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        transition: 'transform 0.3s ease-in-out',
+                        transform: (() => {
+                          const total = messages.length;
+                          if (currentIndex <= 2) return 'translateX(0px)';
+                          if (currentIndex >= total - 3) {
+                            const offset = (total - 6) * 12;
+                            return `translateX(-${offset}px)`;
+                          }
+                          return `translateX(-${(currentIndex - 2) * 12}px)`;
+                        })(),
+                      }}
+                    >
+                      {messages.map((_, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            width: index === currentIndex ? '8px' : '6px',
+                            height: index === currentIndex ? '8px' : '6px',
+                            borderRadius: '50%',
+                            backgroundColor: index === currentIndex ? '#000000' : '#9CA3AF',
+                            flexShrink: 0,
+                            transition: 'all 0.3s',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
-              </motion.div>
-            ))}
-          </div>
-        )}
 
-        {/* Pagination Info */}
-        {totalPages > 1 && (
-          <div className="mt-8 text-center text-sm text-gray-500">
-            전체 {totalPages}페이지 중 1페이지
-          </div>
-        )}
+                {/* 우측 화살표 */}
+                <button
+                  onClick={handleNext}
+                  disabled={currentIndex === totalMessages - 1}
+                  className="w-[32px] h-[32px] rounded-full bg-[#EAEAEA] text-gray-800 flex items-center justify-center
+                            disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#DADADA] transition-all"
+                  style={{
+                    fontSize: '20px',
+                    lineHeight: '1',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1)',
+                    border: 'none',
+                  }}
+                >
+                  ›
+                </button>
+              </div>
+            )}
+
+            {/* 메시지 내용 */}
+            <div className="px-[16px] pb-[20px] relative" style={{ overflow: 'hidden' }}>
+              <AnimatePresence initial={false} custom={direction} mode="wait">
+                <motion.div
+                  key={currentIndex + '-message'}
+                  custom={direction}
+                  initial={{ x: direction > 0 ? 300 : -300, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: direction > 0 ? -300 : 300, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: 'easeInOut' }}
+                >
+                  <p
+                    className="text-[13px] mb-[4px] leading-relaxed whitespace-pre-line"
+                    style={{ color: 'var(--color-text-primary)' }}
+                  >
+                    {currentMessage?.content || '응원 메시지가 없습니다.'}
+                  </p>
+                  <p className="text-[11px]" style={{ color: 'var(--color-text-secondary)' }}>
+                    - 익명의 친구로부터
+                  </p>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* 메시지 개수 표시 */}
+              {totalMessages > 1 && (
+                <div
+                  className="absolute bottom-[20px] right-[16px] text-[10px]"
+                  style={{ color: 'var(--color-text-tertiary)' }}
+                >
+                  {totalMessages}개의 메시지
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
       </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex gap-3">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="flex-1 py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
-          >
-            홈으로
-          </button>
-          <button
-            onClick={() => navigate(ROUTES.LETTER)}
-            className="flex-1 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity"
-          >
-            메시지 보내기
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom padding for fixed navigation */}
-      <div className="h-24"></div>
-    </div>
+    </>
   );
 }
