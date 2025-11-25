@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 import { chatApi } from '../utils/api';
 import type { ChatAnalysisResponse } from '../types';
 
@@ -10,6 +12,30 @@ export default function ChatAnalysisPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [analysisResult, setAnalysisResult] = useState<ChatAnalysisResponse | null>(null);
+  const [showCalendar, setShowCalendar] = useState<'start' | 'end' | null>(null);
+
+  const formatDate = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const formatDisplayDate = (dateStr: string): string => {
+    if (!dateStr) return '날짜 선택';
+    const [year, month, day] = dateStr.split('-');
+    return `${year}년 ${parseInt(month)}월 ${parseInt(day)}일`;
+  };
+
+  const handleDateSelect = (date: Date) => {
+    const formatted = formatDate(date);
+    if (showCalendar === 'start') {
+      setStartDate(formatted);
+    } else if (showCalendar === 'end') {
+      setEndDate(formatted);
+    }
+    setShowCalendar(null);
+  };
 
   // 채팅 분석 Mutation (백엔드: POST /api/chat/analyze)
   const analyzeMutation = useMutation({
@@ -105,18 +131,19 @@ export default function ChatAnalysisPage() {
               >
                 시작 날짜
               </label>
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] focus:outline-none focus:border-[#5E7057]"
+              <button
+                type="button"
+                onClick={() => setShowCalendar('start')}
+                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] text-left"
                 style={{
                   borderColor: 'var(--color-border)',
                   backgroundColor: 'var(--color-main-bg)',
-                  color: 'var(--color-text-primary)',
+                  color: startDate ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   boxSizing: 'border-box',
                 }}
-              />
+              >
+                {formatDisplayDate(startDate)}
+              </button>
             </div>
 
             <div>
@@ -126,18 +153,19 @@ export default function ChatAnalysisPage() {
               >
                 종료 날짜
               </label>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] focus:outline-none focus:border-[#5E7057]"
+              <button
+                type="button"
+                onClick={() => setShowCalendar('end')}
+                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] text-left"
                 style={{
                   borderColor: 'var(--color-border)',
                   backgroundColor: 'var(--color-main-bg)',
-                  color: 'var(--color-text-primary)',
+                  color: endDate ? 'var(--color-text-primary)' : 'var(--color-text-secondary)',
                   boxSizing: 'border-box',
                 }}
-              />
+              >
+                {formatDisplayDate(endDate)}
+              </button>
             </div>
           </div>
 
@@ -253,6 +281,195 @@ export default function ChatAnalysisPage() {
           </motion.div>
         )}
       </div>
+
+      {/* 캘린더 모달 */}
+      <AnimatePresence>
+        {showCalendar && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-[1000]"
+              onClick={() => setShowCalendar(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[1001] w-[90%] max-w-[340px] rounded-[20px] overflow-hidden shadow-xl"
+              style={{ backgroundColor: 'var(--color-bg-card)' }}
+            >
+              {/* 모달 헤더 */}
+              <div className="flex items-center justify-between px-[16px] py-[12px] bg-[#5E7057]">
+                <span className="text-[15px] font-[600] text-white">
+                  {showCalendar === 'start' ? '시작 날짜 선택' : '종료 날짜 선택'}
+                </span>
+                <button
+                  onClick={() => setShowCalendar(null)}
+                  className="text-white text-[18px] bg-transparent border-0"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* 캘린더 */}
+              <div className="p-[12px]">
+                <Calendar
+                  value={showCalendar === 'start' && startDate ? new Date(startDate) : showCalendar === 'end' && endDate ? new Date(endDate) : new Date()}
+                  onChange={(value) => value instanceof Date && handleDateSelect(value)}
+                  locale="en-US"
+                  formatDay={(_, date) => date.getDate().toString()}
+                  formatShortWeekday={(_, date) => ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]}
+                  formatMonthYear={(_, date) => `${date.getFullYear()}년 ${date.getMonth() + 1}월`}
+                  next2Label={null}
+                  prev2Label={null}
+                  maxDate={new Date()}
+                  tileClassName={({ date }) => {
+                    const day = date.getDay();
+                    if (day === 0) return 'sunday';
+                    if (day === 6) return 'saturday';
+                    return null;
+                  }}
+                />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* 캘린더 스타일 */}
+      <style>{`
+        .react-calendar {
+          width: 100%;
+          border: none;
+          font-family: inherit;
+          background: transparent;
+        }
+
+        .react-calendar__navigation {
+          display: flex;
+          height: 44px;
+          margin-bottom: 8px;
+          align-items: center;
+        }
+
+        .react-calendar__navigation button {
+          min-width: 36px;
+          height: 36px;
+          background: var(--color-main-bg) !important;
+          border: none;
+          border-radius: 10px;
+          font-size: 14px;
+          cursor: pointer;
+          color: var(--color-text-primary);
+          transition: all 0.15s ease;
+        }
+
+        .react-calendar__navigation button:hover {
+          background: rgba(94, 112, 87, 0.15) !important;
+        }
+
+        .react-calendar__navigation button:disabled {
+          opacity: 0.3;
+        }
+
+        .react-calendar__navigation__label {
+          font-weight: 600;
+          font-size: 15px;
+          color: var(--color-text-primary);
+          pointer-events: none;
+        }
+
+        .react-calendar__month-view__weekdays {
+          text-align: center;
+          font-weight: 600;
+          font-size: 12px;
+          margin-bottom: 4px;
+          display: grid !important;
+          grid-template-columns: repeat(7, 1fr) !important;
+          background: var(--color-main-bg);
+          border-radius: 8px;
+          padding: 6px 0;
+        }
+
+        .react-calendar__month-view__weekdays__weekday abbr {
+          text-decoration: none;
+          color: var(--color-text-secondary);
+        }
+
+        .react-calendar__month-view__weekdays__weekday:nth-child(1) abbr {
+          color: #e57373;
+        }
+
+        .react-calendar__month-view__weekdays__weekday:nth-child(7) abbr {
+          color: #64b5f6;
+        }
+
+        .react-calendar__month-view__days {
+          gap: 3px;
+          margin-top: 6px;
+          display: grid !important;
+          grid-template-columns: repeat(7, 1fr) !important;
+        }
+
+        .react-calendar__tile {
+          aspect-ratio: 1;
+          padding: 0;
+          background: var(--color-main-bg);
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 10px;
+          transition: all 0.15s ease;
+          cursor: pointer;
+        }
+
+        .react-calendar__tile abbr {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--color-text-primary);
+        }
+
+        .react-calendar__tile.sunday abbr {
+          color: #e57373;
+        }
+
+        .react-calendar__tile.saturday abbr {
+          color: #64b5f6;
+        }
+
+        .react-calendar__tile--now {
+          background: rgba(94, 112, 87, 0.2) !important;
+        }
+
+        .react-calendar__tile--now abbr {
+          color: #5E7057 !important;
+          font-weight: 700;
+        }
+
+        .react-calendar__tile--active {
+          background: #5E7057 !important;
+        }
+
+        .react-calendar__tile--active abbr {
+          color: white !important;
+          font-weight: 600;
+        }
+
+        .react-calendar__tile:enabled:hover {
+          background: rgba(94, 112, 87, 0.12);
+        }
+
+        .react-calendar__tile:focus {
+          outline: none;
+        }
+
+        .react-calendar__tile--neighboringMonth {
+          visibility: hidden !important;
+        }
+      `}</style>
     </div>
   );
 }
