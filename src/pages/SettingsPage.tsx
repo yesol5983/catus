@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, useUpdateProfile, useUpdateNotifications, useUpdateDiaryTime } from '../hooks/useApi';
+import { getToken, getTokenExpiration } from '../utils/storage';
 
 interface ExpandedItems {
   nickname: boolean;
@@ -64,6 +65,59 @@ function SettingsPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveType, setSaveType] = useState<SaveType>('');
+
+  // JWT 토큰 만료 정보 (디버그용)
+  const [tokenInfo, setTokenInfo] = useState<{
+    expiresAt: string;
+    remainingTime: string;
+    isExpired: boolean;
+  } | null>(null);
+
+  // 토큰 정보 업데이트 (1초마다)
+  useEffect(() => {
+    const updateTokenInfo = () => {
+      const token = getToken();
+      if (!token) {
+        setTokenInfo(null);
+        return;
+      }
+
+      const expiration = getTokenExpiration(token);
+      if (!expiration) {
+        setTokenInfo(null);
+        return;
+      }
+
+      const now = Date.now();
+      const remainingMs = expiration - now;
+      const isExpired = remainingMs <= 0;
+
+      // 만료 시간 포맷팅
+      const expiresAt = new Date(expiration).toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+
+      // 남은 시간 포맷팅
+      let remainingTime = '만료됨';
+      if (!isExpired) {
+        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
+        remainingTime = `${hours}시간 ${minutes}분 ${seconds}초`;
+      }
+
+      setTokenInfo({ expiresAt, remainingTime, isExpired });
+    };
+
+    updateTokenInfo();
+    const interval = setInterval(updateTokenInfo, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // 개별 항목 토글 (한 번에 하나씩만 열림)
   const toggleItem = (item: keyof ExpandedItems): void => {
@@ -604,6 +658,52 @@ function SettingsPage() {
               </div>
             </div>
         </div>
+
+        {/* JWT 토큰 정보 (디버그용) */}
+        {tokenInfo && (
+          <div style={{ marginBottom: '32px' }}>
+            <h3 className="text-[#999] font-semibold text-center" style={{ fontSize: '12px', margin: '0 0 8px 0', paddingLeft: '16px', paddingRight: '16px' }}>🔐 토큰 정보 (테스트용)</h3>
+            <div className="bg-[white]" style={{ borderRadius: '16px', paddingTop: '16px', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px', marginBottom: '8px' }}>
+              {/* 만료 시간 */}
+              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                <span className="text-[#666]" style={{ fontSize: '14px' }}>만료 시간</span>
+                <span className="text-[#333] font-medium" style={{ fontSize: '13px' }}>{tokenInfo.expiresAt}</span>
+              </div>
+
+              {/* 남은 시간 */}
+              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                <span className="text-[#666]" style={{ fontSize: '14px' }}>남은 시간</span>
+                <span
+                  className="font-bold"
+                  style={{
+                    fontSize: '14px',
+                    color: tokenInfo.isExpired ? '#ef4444' : '#22c55e'
+                  }}
+                >
+                  {tokenInfo.remainingTime}
+                </span>
+              </div>
+
+              {/* 상태 */}
+              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+                <span className="text-[#666]" style={{ fontSize: '14px' }}>상태</span>
+                <span
+                  className="font-bold px-3 py-1 rounded-full"
+                  style={{
+                    fontSize: '12px',
+                    backgroundColor: tokenInfo.isExpired ? '#fef2f2' : '#f0fdf4',
+                    color: tokenInfo.isExpired ? '#ef4444' : '#22c55e'
+                  }}
+                >
+                  {tokenInfo.isExpired ? '❌ 만료됨' : '✅ 유효'}
+                </span>
+              </div>
+            </div>
+            <p className="text-center text-[#999]" style={{ fontSize: '11px', marginTop: '4px' }}>
+              JWT 토큰 만료 시간: 24시간
+            </p>
+          </div>
+        )}
 
         {/* 기타 */}
         <div style={{ marginBottom: '8px' }}>
