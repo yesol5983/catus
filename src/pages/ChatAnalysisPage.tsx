@@ -69,7 +69,6 @@ export default function ChatAnalysisPage() {
           style={{ backgroundColor: 'var(--color-bg-card)' }}
         >
           <div className="flex items-center gap-[8px] mb-[8px]">
-            <span className="text-[20px]">📊</span>
             <h2
               className="font-[600] text-[15px]"
               style={{ color: 'var(--color-text-primary)' }}
@@ -88,14 +87,13 @@ export default function ChatAnalysisPage() {
 
         {/* 날짜 선택 */}
         <div
-          className="rounded-[16px] p-[16px] mb-[12px] flex-shrink-0"
+          className="rounded-[16px] p-[16px] mb-[12px] flex-shrink-0 overflow-hidden"
           style={{ backgroundColor: 'var(--color-bg-card)' }}
         >
           <h3
             className="text-[15px] font-[600] mb-[12px] flex items-center gap-[8px]"
             style={{ color: 'var(--color-text-primary)' }}
           >
-            <span>📅</span>
             <span>분석 기간 선택</span>
           </h3>
 
@@ -116,6 +114,7 @@ export default function ChatAnalysisPage() {
                   borderColor: 'var(--color-border)',
                   backgroundColor: 'var(--color-main-bg)',
                   color: 'var(--color-text-primary)',
+                  boxSizing: 'border-box',
                 }}
               />
             </div>
@@ -136,6 +135,7 @@ export default function ChatAnalysisPage() {
                   borderColor: 'var(--color-border)',
                   backgroundColor: 'var(--color-main-bg)',
                   color: 'var(--color-text-primary)',
+                  boxSizing: 'border-box',
                 }}
               />
             </div>
