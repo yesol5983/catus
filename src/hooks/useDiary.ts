@@ -3,6 +3,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { diaryApi } from '../utils/api';
 import { logError } from '../utils/errorHandler';
 import type { Diary } from '../types';
@@ -19,18 +20,14 @@ interface UseDiaryListReturn {
 }
 
 /**
- * 일기 목록 훅
+ * 일기 목록 훅 (React Query 캐싱 적용)
  */
 export const useDiaryList = (year: number, month: number): UseDiaryListReturn => {
-  const [diaries, setDiaries] = useState<DiaryMap>({});
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<unknown | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchDiaries = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-
-    try {
+  const { data: diaries = {}, isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['diary', 'list', year, month],
+    queryFn: async () => {
       const data = await diaryApi.getList(year, month);
       // 백엔드 응답: { year, month, diaries: [{id, date, title, previewText, thumbnailUrl}], totalCount }
       // 배열을 객체로 변환 (날짜를 키로)
@@ -39,30 +36,71 @@ export const useDiaryList = (year: number, month: number): UseDiaryListReturn =>
           id: diary.id,
           date: diary.date,
           title: diary.title,
-          content: diary.previewText, // previewText를 content로 매핑
+          content: diary.previewText,
           imageUrl: diary.thumbnailUrl,
-          createdAt: new Date().toISOString(), // 목록에는 createdAt 없음
+          createdAt: new Date().toISOString(),
         };
         return acc;
       }, {});
-      setDiaries(diariesMap);
-    } catch (err) {
-      logError(err, { action: 'fetchDiaries', year, month });
-      setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [year, month]);
+      return diariesMap;
+    },
+    staleTime: 5 * 60 * 1000, // 5분간 캐시 유지
+    gcTime: 30 * 60 * 1000, // 30분간 가비지 컬렉션 방지
+  });
 
+  // 이전/다음 달 미리 불러오기 (prefetch)
   useEffect(() => {
-    fetchDiaries();
-  }, [fetchDiaries]);
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const nextMonth = month === 12 ? 1 : month + 1;
+    const nextYear = month === 12 ? year + 1 : year;
+
+    // 이전 달 prefetch
+    queryClient.prefetchQuery({
+      queryKey: ['diary', 'list', prevYear, prevMonth],
+      queryFn: async () => {
+        const data = await diaryApi.getList(prevYear, prevMonth);
+        return data.diaries.reduce((acc: DiaryMap, diary: any) => {
+          acc[diary.date] = {
+            id: diary.id,
+            date: diary.date,
+            title: diary.title,
+            content: diary.previewText,
+            imageUrl: diary.thumbnailUrl,
+            createdAt: new Date().toISOString(),
+          };
+          return acc;
+        }, {});
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+
+    // 다음 달 prefetch
+    queryClient.prefetchQuery({
+      queryKey: ['diary', 'list', nextYear, nextMonth],
+      queryFn: async () => {
+        const data = await diaryApi.getList(nextYear, nextMonth);
+        return data.diaries.reduce((acc: DiaryMap, diary: any) => {
+          acc[diary.date] = {
+            id: diary.id,
+            date: diary.date,
+            title: diary.title,
+            content: diary.previewText,
+            imageUrl: diary.thumbnailUrl,
+            createdAt: new Date().toISOString(),
+          };
+          return acc;
+        }, {});
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [year, month, queryClient]);
 
   return {
     diaries,
     loading,
     error,
-    refetch: fetchDiaries,
+    refetch: async () => { await refetch(); },
   };
 };
 
