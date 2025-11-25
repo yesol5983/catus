@@ -137,7 +137,7 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
   const cactusScale = 0.9 + (heightRatio - 1) * 0.5;
 
   // 가로 모드에서 선인장 위치 조정
-  const cactusTop = isLandscape ? "35%" : "34%";
+  const cactusTop = isLandscape ? "36%" : "34%";
 
   const openChat = (): void => navigate(ROUTES.CHAT);
 
@@ -709,7 +709,7 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
       {/* 하단 채팅 인풋바 */}
       {!hideButtons && !backgroundOnly && (
         <div
-          className="fixed bottom-0 z-50 cursor-pointer group"
+          className="chat-input-bar fixed bottom-0 z-50 cursor-pointer group"
           style={{ width: '70%', padding: '3px', left: '46%', transform: 'translateX(-50%)' }}
           onClick={openChat}
         >
