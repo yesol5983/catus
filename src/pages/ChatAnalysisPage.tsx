@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { ROUTES } from '../constants/routes';
 import { chatApi } from '../utils/api';
 import type { ChatAnalysisResponse } from '../types';
 
@@ -40,64 +39,104 @@ export default function ChatAnalysisPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fef9f1]">
-      {/* Header */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="text-2xl text-gray-700 hover:text-gray-900"
-          >
-            ‹
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">채팅 분석</h1>
-          <div className="w-8"></div>
+    <div
+      className="h-[100dvh] flex flex-col overflow-hidden"
+      style={{ backgroundColor: 'var(--color-main-bg)' }}
+    >
+      {/* 헤더 */}
+      <div
+        className="flex items-center justify-between px-[12px] py-[12px] flex-shrink-0"
+        style={{ backgroundColor: 'var(--color-bg-card)' }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-5px' }}
+        >
+          ←
+        </button>
+        <div className="text-[16px] font-[600] text-[#5E7057]">
+          채팅 분석
         </div>
+        <div className="w-[20px]" />
       </div>
 
-      {/* Content */}
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Description */}
-        <div className="bg-blue-50 rounded-2xl p-5 mb-6">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">📊</span>
-            <h2 className="font-bold text-blue-900">채팅 분석이란?</h2>
+      {/* 콘텐츠 영역 */}
+      <div className="flex-1 flex flex-col px-[16px] py-[16px] overflow-hidden">
+        {/* 설명 */}
+        <div
+          className="rounded-[16px] p-[16px] mb-[12px] flex-shrink-0"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <div className="flex items-center gap-[8px] mb-[8px]">
+            <span className="text-[20px]">📊</span>
+            <h2
+              className="font-[600] text-[15px]"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              채팅 분석이란?
+            </h2>
           </div>
-          <p className="text-sm text-blue-800 leading-relaxed">
+          <p
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             선택한 기간 동안의 대화를 Big5 성격 분석 모델로 분석하여
             감정 변화와 성격 특성을 파악할 수 있습니다.
           </p>
         </div>
 
-        {/* Date Selection */}
-        <div className="bg-white rounded-2xl p-5 shadow-md mb-6">
-          <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        {/* 날짜 선택 */}
+        <div
+          className="rounded-[16px] p-[16px] mb-[12px] flex-shrink-0"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <h3
+            className="text-[15px] font-[600] mb-[12px] flex items-center gap-[8px]"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
             <span>📅</span>
             <span>분석 기간 선택</span>
           </h3>
 
-          <div className="space-y-4">
+          <div className="flex flex-col gap-[12px]">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label
+                className="block text-[13px] font-[500] mb-[6px]"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 시작 날짜
               </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52]"
+                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] focus:outline-none focus:border-[#5E7057]"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-main-bg)',
+                  color: 'var(--color-text-primary)',
+                }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label
+                className="block text-[13px] font-[500] mb-[6px]"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 종료 날짜
               </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-[#5F6F52]"
+                className="w-full px-[12px] py-[10px] border rounded-[10px] text-[14px] focus:outline-none focus:border-[#5E7057]"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-main-bg)',
+                  color: 'var(--color-text-primary)',
+                }}
               />
             </div>
           </div>
@@ -105,158 +144,115 @@ export default function ChatAnalysisPage() {
           <button
             onClick={handleAnalyze}
             disabled={analyzeMutation.isPending || !startDate || !endDate}
-            className="w-full mt-6 py-3 bg-[#5F6F52] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-[16px] py-[12px] bg-[#5E7057] text-[#FFFFFF] rounded-[12px] text-[14px] font-[500] border-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {analyzeMutation.isPending ? '분석 중...' : '분석 시작'}
           </button>
         </div>
 
-        {/* Analysis Result */}
+        {/* 분석 결과 - 스크롤 가능 영역 */}
         {analysisResult && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-6"
+            className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-[12px]"
           >
-            {/* Period */}
-            <div className="bg-white rounded-2xl p-5 shadow-md">
-              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+            {/* 기간 */}
+            <div
+              className="rounded-[16px] p-[16px] flex-shrink-0"
+              style={{ backgroundColor: 'var(--color-bg-card)' }}
+            >
+              <h3
+                className="text-[15px] font-[600] mb-[8px] flex items-center gap-[8px]"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 <span>📅</span>
                 <span>분석 기간</span>
               </h3>
-              <p className="text-gray-700">
+              <p
+                className="text-[14px]"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 {analysisResult.period.start} ~ {analysisResult.period.end}
               </p>
             </div>
 
-            {/* Big5 Scores */}
-            <div className="bg-white rounded-2xl p-5 shadow-md">
-              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            {/* Big5 점수 */}
+            <div
+              className="rounded-[16px] p-[16px] flex-shrink-0"
+              style={{ backgroundColor: 'var(--color-bg-card)' }}
+            >
+              <h3
+                className="text-[15px] font-[600] mb-[12px] flex items-center gap-[8px]"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 <span>🧠</span>
                 <span>성격 분석 결과</span>
               </h3>
-              <div className="space-y-4">
-                {/* Openness */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      개방성 (Openness)
-                    </span>
-                    <span className="text-sm font-bold text-[#5F6F52]">
-                      {analysisResult.emotionScores.openness.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#5F6F52] h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(analysisResult.emotionScores.openness / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Conscientiousness */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      성실성 (Conscientiousness)
-                    </span>
-                    <span className="text-sm font-bold text-[#5F6F52]">
-                      {analysisResult.emotionScores.conscientiousness.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#5F6F52] h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(analysisResult.emotionScores.conscientiousness / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Extraversion */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      외향성 (Extraversion)
-                    </span>
-                    <span className="text-sm font-bold text-[#5F6F52]">
-                      {analysisResult.emotionScores.extraversion.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#5F6F52] h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(analysisResult.emotionScores.extraversion / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Agreeableness */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      친화성 (Agreeableness)
-                    </span>
-                    <span className="text-sm font-bold text-[#5F6F52]">
-                      {analysisResult.emotionScores.agreeableness.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#5F6F52] h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(analysisResult.emotionScores.agreeableness / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Neuroticism */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-gray-700">
-                      신경증 (Neuroticism)
-                    </span>
-                    <span className="text-sm font-bold text-[#5F6F52]">
-                      {analysisResult.emotionScores.neuroticism.toFixed(1)}
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-[#5F6F52] h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${(analysisResult.emotionScores.neuroticism / 5) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
+              <div className="flex flex-col gap-[12px]">
+                {[
+                  { key: 'openness', name: '개방성' },
+                  { key: 'conscientiousness', name: '성실성' },
+                  { key: 'extraversion', name: '외향성' },
+                  { key: 'agreeableness', name: '친화성' },
+                  { key: 'neuroticism', name: '신경증' },
+                ].map(({ key, name }) => {
+                  const score = analysisResult.emotionScores[key as keyof typeof analysisResult.emotionScores] || 0;
+                  const percentage = Math.min(100, Math.round(score * 10));
+                  return (
+                    <div key={key}>
+                      <div className="flex justify-between items-center mb-[4px]">
+                        <span
+                          className="text-[13px] font-[500]"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
+                          {name}
+                        </span>
+                        <span
+                          className="text-[13px] font-[600]"
+                          style={{ color: '#5E7057' }}
+                        >
+                          {percentage}%
+                        </span>
+                      </div>
+                      <div
+                        className="w-full rounded-full h-[6px]"
+                        style={{ backgroundColor: '#E8E8E8' }}
+                      >
+                        <div
+                          className="h-[6px] rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%`, backgroundColor: '#5E7057' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Summary */}
-            <div className="bg-white rounded-2xl p-5 shadow-md">
-              <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+            {/* 요약 */}
+            <div
+              className="rounded-[16px] p-[16px] flex-shrink-0"
+              style={{ backgroundColor: 'var(--color-bg-card)' }}
+            >
+              <h3
+                className="text-[15px] font-[600] mb-[8px] flex items-center gap-[8px]"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 <span>💬</span>
                 <span>분석 요약</span>
               </h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+              <p
+                className="text-[13px] leading-relaxed whitespace-pre-wrap"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 {analysisResult.summary}
               </p>
             </div>
           </motion.div>
         )}
       </div>
-
-      {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <button
-            onClick={() => navigate(ROUTES.HOME)}
-            className="w-full py-3 bg-white text-gray-700 rounded-xl font-semibold hover:bg-gray-100 transition-colors border border-gray-300"
-          >
-            홈으로 돌아가기
-          </button>
-        </div>
-      </div>
-
-      {/* Bottom padding */}
-      <div className="h-24"></div>
     </div>
   );
 }
