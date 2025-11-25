@@ -6,9 +6,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
+import { motion } from 'framer-motion';
 import { big5Api } from '../utils/api';
 import { ROUTES } from '../constants/routes';
 import { BIG5_QUESTIONS, SCORE_OPTIONS } from '../constants/big5Questions';
+import footprintIcon from '../assets/images/footprint.svg';
 
 export default function Big5TestPage() {
   const navigate = useNavigate();
@@ -81,42 +83,41 @@ export default function Big5TestPage() {
   const currentQ = BIG5_QUESTIONS[currentQuestion];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3] flex flex-col">
-      {/* 헤더 */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-lg font-semibold text-gray-800 text-center">
-            🧠 BIG5 성격 검사
-          </h1>
-          <p className="text-sm text-gray-500 text-center mt-1">
-            당신의 성격을 분석하고 맞춤 일기를 만들어드려요
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+      {/* 헤더 + 진행도 */}
+      <div className="w-full flex flex-col items-center pt-4 pb-4 sticky top-0 z-30" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+        {/* 제목 */}
+        <h1 className="text-lg font-semibold text-center whitespace-nowrap mb-3" style={{ color: 'var(--color-text-primary)' }}>
+          🧠 BIG5 성격 검사
+        </h1>
 
-      {/* 진행도 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">
-              {currentQuestion + 1} / {BIG5_QUESTIONS.length}
-            </span>
-            <span className="text-sm text-[#59B464] font-medium">{Math.round(progress)}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-[#59B464] h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+        {/* 진행도 바 */}
+        <div className="relative w-[80%] h-[8px] rounded-full mb-2" style={{ backgroundColor: 'var(--color-border)' }}>
+          <motion.div
+            className="absolute top-0 left-0 h-full bg-[#59B464] rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+          />
+          <motion.img
+            src={footprintIcon}
+            alt="progress-footprint"
+            className="absolute w-[16px] h-[16px] top-[-4px] z-50 select-none"
+            animate={{ left: `calc(${progress}% - 8px)` }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+          />
         </div>
+
+        {/* 진행 단계 텍스트 */}
+        <p className="text-sm font-medium text-center" style={{ color: 'var(--color-text-secondary)' }}>
+          {currentQuestion + 1} / {BIG5_QUESTIONS.length}
+        </p>
       </div>
 
       {/* 질문 */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="max-w-2xl w-full">
-          <div className="bg-white rounded-2xl p-8 shadow-md">
-            <p className="text-xl text-gray-800 text-center mb-8 leading-relaxed">
+      <div className="flex-1 flex items-center justify-center px-4 py-4">
+        <div className="max-w-md w-full">
+          <div className="rounded-2xl p-6" style={{ backgroundColor: 'var(--color-bg-card)' }}>
+            <p className="text-lg text-center mb-6 leading-relaxed" style={{ color: 'var(--color-text-primary)' }}>
               {currentQ.text}
             </p>
 
@@ -126,19 +127,15 @@ export default function Big5TestPage() {
                 <button
                   key={option.value}
                   onClick={() => handleAnswerSelect(option.value)}
-                  className={`w-full p-4 rounded-xl border-2 transition-all ${
-                    selectedAnswer === option.value
-                      ? 'border-[#59B464] bg-[#59B464] bg-opacity-10'
-                      : 'border-gray-200 hover:border-[#59B464] hover:bg-gray-50'
-                  }`}
+                  className="w-full p-4 rounded-xl transition-all"
+                  style={{
+                    backgroundColor: selectedAnswer === option.value ? 'rgba(89, 180, 100, 0.15)' : 'var(--color-main-bg)',
+                    border: 'none',
+                    color: selectedAnswer === option.value ? '#59B464' : 'var(--color-text-primary)',
+                    fontWeight: selectedAnswer === option.value ? 500 : 400
+                  }}
                 >
-                  <span
-                    className={`text-base ${
-                      selectedAnswer === option.value ? 'text-[#59B464] font-medium' : 'text-gray-700'
-                    }`}
-                  >
-                    {option.label}
-                  </span>
+                  {option.label}
                 </button>
               ))}
             </div>
@@ -150,7 +147,12 @@ export default function Big5TestPage() {
               <button
                 onClick={handlePrevious}
                 disabled={submitTestMutation.isPending}
-                className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-6 py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: 'var(--color-bg-card)',
+                  border: 'none',
+                  color: 'var(--color-text-primary)'
+                }}
               >
                 이전
               </button>
@@ -158,7 +160,11 @@ export default function Big5TestPage() {
             <button
               onClick={handleNext}
               disabled={selectedAnswer === null || submitTestMutation.isPending}
-              className="flex-1 px-6 py-3 bg-[#59B464] text-white rounded-full hover:bg-[#4a9654] transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="flex-1 px-6 py-3 rounded-xl text-white transition-colors disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: selectedAnswer === null ? '#ccc' : '#59B464',
+                border: 'none'
+              }}
             >
               {currentQuestion < BIG5_QUESTIONS.length - 1
                 ? '다음'
@@ -170,8 +176,8 @@ export default function Big5TestPage() {
 
           {/* 도움말 */}
           {currentQuestion === 0 && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-200">
-              <p className="text-sm text-blue-800 text-center">
+            <div className="mt-6 p-4 rounded-xl" style={{ backgroundColor: 'rgba(89, 180, 100, 0.1)' }}>
+              <p className="text-sm text-center" style={{ color: '#59B464' }}>
                 💡 솔직하게 답변할수록 더 정확한 분석이 가능해요
               </p>
             </div>

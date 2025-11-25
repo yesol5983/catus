@@ -137,7 +137,7 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
   const cactusScale = 0.9 + (heightRatio - 1) * 0.5;
 
   // 가로 모드에서 선인장 위치 조정
-  const cactusTop = isLandscape ? "37%" : "34%";
+  const cactusTop = isLandscape ? "36.5%" : "33.8%";
 
   const openChat = (): void => navigate(ROUTES.CHAT);
 
