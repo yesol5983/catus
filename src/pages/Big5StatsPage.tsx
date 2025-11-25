@@ -9,11 +9,124 @@ import { big5Api } from '../utils/api';
 import { ROUTES } from '../constants/routes';
 
 const BIG5_TRAITS = {
-  openness: { name: '개방성', color: '#FF6B6B', description: '새로운 경험에 대한 개방성' },
-  conscientiousness: { name: '성실성', color: '#4ECDC4', description: '목표 지향적이고 조직적임' },
-  extraversion: { name: '외향성', color: '#FFE66D', description: '사교적이고 활발함' },
-  agreeableness: { name: '친화성', color: '#95E1D3', description: '협조적이고 배려심이 많음' },
-  neuroticism: { name: '신경성', color: '#B4A7D6', description: '정서적 안정성' },
+  openness: { name: '개방성', description: '새로운 경험에 열린 태도' },
+  conscientiousness: { name: '성실성', description: '목표 지향적이고 체계적' },
+  extraversion: { name: '외향성', description: '사회적이고 에너지 넘침' },
+  agreeableness: { name: '우호성', description: '협조적이고 공감 능력 높음' },
+  neuroticism: { name: '안정성', description: '정서적으로 안정적' },
+} as const;
+
+// 레이더 차트 컴포넌트
+const RadarChart = ({ scores }: { scores: Record<string, number> }) => {
+  const size = 280;
+  const center = size / 2;
+  const radius = 100;
+  const levels = 5;
+
+  // 5개 꼭지점 각도 (위에서 시작, 시계방향)
+  const traits = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];
+  const labels = ['개방성', '성실성', '외향성', '우호성', '안정성'];
+
+  const getPoint = (index: number, value: number) => {
+    const angle = (Math.PI * 2 * index) / 5 - Math.PI / 2;
+    const r = (value / 5) * radius;
+    return {
+      x: center + r * Math.cos(angle),
+      y: center + r * Math.sin(angle),
+    };
+  };
+
+  // 배경 오각형 (레벨별)
+  const backgroundPolygons = [];
+  for (let level = 1; level <= levels; level++) {
+    const points = traits.map((_, i) => {
+      const point = getPoint(i, level);
+      return `${point.x},${point.y}`;
+    }).join(' ');
+    backgroundPolygons.push(
+      <polygon
+        key={level}
+        points={points}
+        fill="none"
+        stroke="#E5E5E5"
+        strokeWidth="1"
+      />
+    );
+  }
+
+  // 축선
+  const axisLines = traits.map((_, i) => {
+    const point = getPoint(i, 5);
+    return (
+      <line
+        key={i}
+        x1={center}
+        y1={center}
+        x2={point.x}
+        y2={point.y}
+        stroke="#E5E5E5"
+        strokeWidth="1"
+      />
+    );
+  });
+
+  // 데이터 다각형
+  const dataPoints = traits.map((trait, i) => {
+    const score = scores[trait] || 0;
+    return getPoint(i, score);
+  });
+  const dataPolygon = dataPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+  // 라벨 위치
+  const labelPositions = traits.map((_, i) => {
+    const angle = (Math.PI * 2 * i) / 5 - Math.PI / 2;
+    const labelRadius = radius + 35;
+    return {
+      x: center + labelRadius * Math.cos(angle),
+      y: center + labelRadius * Math.sin(angle),
+    };
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {/* 배경 오각형 */}
+      {backgroundPolygons}
+      {/* 축선 */}
+      {axisLines}
+      {/* 데이터 영역 */}
+      <polygon
+        points={dataPolygon}
+        fill="rgba(94, 112, 87, 0.3)"
+        stroke="#5E7057"
+        strokeWidth="2"
+      />
+      {/* 데이터 포인트 */}
+      {dataPoints.map((point, i) => (
+        <circle
+          key={i}
+          cx={point.x}
+          cy={point.y}
+          r="6"
+          fill="#5E7057"
+        />
+      ))}
+      {/* 라벨 */}
+      {labelPositions.map((pos, i) => (
+        <text
+          key={i}
+          x={pos.x}
+          y={pos.y}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          fontSize="14"
+          fontWeight="600"
+          fill="#333"
+        >
+          {labels[i]}
+        </text>
+      ))}
+    </svg>
+  );
 };
 
 export default function Big5StatsPage() {
@@ -36,11 +149,12 @@ export default function Big5StatsPage() {
   // 로딩 중
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#59B464] mx-auto mb-4"></div>
-          <p className="text-gray-600">성격 데이터를 불러오는 중...</p>
-        </div>
+      <div
+        className="h-[100dvh] flex flex-col items-center justify-center overflow-hidden"
+        style={{ backgroundColor: 'var(--color-main-bg)' }}
+      >
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E7057] mb-4"></div>
+        <p style={{ color: 'var(--color-text-secondary)' }}>성격 데이터를 불러오는 중...</p>
       </div>
     );
   }
@@ -48,28 +162,50 @@ export default function Big5StatsPage() {
   // 에러 또는 데이터 없음 - 테스트 안내
   if (error || !currentData) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3]">
-        <div className="bg-white shadow-sm">
-          <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-            <button onClick={() => navigate(ROUTES.HOME)} className="text-gray-600 hover:text-gray-800">
-              ← 뒤로
-            </button>
-            <h1 className="text-lg font-semibold text-gray-800">BIG5 성격 분석</h1>
-            <div className="w-12" />
+      <div
+        className="h-[100dvh] flex flex-col overflow-hidden"
+        style={{ backgroundColor: 'var(--color-main-bg)' }}
+      >
+        {/* 헤더 */}
+        <div
+          className="flex items-center justify-between px-[12px] py-[12px] flex-shrink-0"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <button
+            onClick={() => navigate(-1)}
+            className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
+            style={{ marginTop: '-5px' }}
+          >
+            ←
+          </button>
+          <div className="text-[16px] font-[600] text-[#5E7057]">
+            BIG5 성격 분석
           </div>
+          <div className="w-[20px]" />
         </div>
 
-        <div className="flex items-center justify-center min-h-[calc(100vh-80px)] px-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center shadow-md">
-            <div className="text-6xl mb-4">🧠</div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">BIG5 성격 검사를 시작하세요</h2>
-            <p className="text-gray-600 mb-6">
-              10가지 질문으로 당신의 성격 특성을 분석하고,<br />
+        <div className="flex-1 flex items-center justify-center px-[16px]">
+          <div
+            className="rounded-[20px] p-[24px] w-full max-w-[360px] text-center"
+            style={{ backgroundColor: 'var(--color-bg-card)' }}
+          >
+            <div className="text-[48px] mb-[16px]">🧠</div>
+            <h2
+              className="text-[18px] font-[600] mb-[8px]"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              BIG5 성격 검사를 시작하세요
+            </h2>
+            <p
+              className="text-[14px] mb-[20px] leading-relaxed"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              10가지 질문으로 당신의 성격 특성을 분석하고,
               매주 자동으로 업데이트됩니다.
             </p>
             <button
               onClick={() => navigate(ROUTES.BIG5_TEST)}
-              className="w-full px-6 py-3 bg-[#59B464] text-white rounded-full hover:bg-[#4a9654] transition-colors"
+              className="w-full py-[12px] bg-[#5E7057] text-[#FFFFFF] rounded-[12px] text-[15px] font-[500] border-0"
             >
               검사 시작하기
             </button>
@@ -82,42 +218,81 @@ export default function Big5StatsPage() {
   const scores = currentData.scores;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#fef9f1] to-[#f5efe3]">
+    <div
+      className="h-[100dvh] flex flex-col overflow-hidden"
+      style={{ backgroundColor: 'var(--color-main-bg)' }}
+    >
       {/* 헤더 */}
-      <div className="bg-white shadow-sm sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <button onClick={() => navigate(ROUTES.HOME)} className="text-gray-600 hover:text-gray-800">
-            ← 뒤로
-          </button>
-          <h1 className="text-lg font-semibold text-gray-800">BIG5 성격 분석</h1>
-          <div className="w-12" />
+      <div
+        className="flex items-center justify-between px-[12px] py-[12px] flex-shrink-0"
+        style={{ backgroundColor: 'var(--color-bg-card)' }}
+      >
+        <button
+          onClick={() => navigate(-1)}
+          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-5px' }}
+        >
+          ←
+        </button>
+        <div className="text-[16px] font-[600] text-[#5E7057]">
+          BIG5 성격 분석
         </div>
+        <div className="w-[20px]" />
       </div>
 
-      {/* 성격 점수 */}
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-md mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">현재 성격 특성</h2>
-          <div className="space-y-4">
+      {/* 성격 점수 - 스크롤 영역 */}
+      <div className="flex-1 overflow-y-auto px-[16px] py-[16px]">
+        {/* 레이더 차트 */}
+        <div
+          className="rounded-[16px] p-[16px] mb-[16px]"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <div className="flex justify-center">
+            <RadarChart scores={scores} />
+          </div>
+        </div>
+
+        {/* 성격 특성 바 그래프 */}
+        <div
+          className="rounded-[16px] p-[16px] mb-[16px]"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <div className="flex flex-col gap-[20px]">
             {Object.entries(BIG5_TRAITS).map(([key, trait]) => {
               const score = scores[key as keyof typeof scores] || 0;
-              const percentage = (score / 5) * 100;
+              const percentage = Math.round((score / 5) * 100);
 
               return (
                 <div key={key}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <span className="font-medium text-gray-800">{trait.name}</span>
-                      <span className="text-sm text-gray-500 ml-2">{score.toFixed(1)}</span>
-                    </div>
+                  <div className="flex items-center justify-between mb-[4px]">
+                    <span
+                      className="text-[14px] font-[600]"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      {trait.name}
+                    </span>
+                    <span
+                      className="text-[14px] font-[600]"
+                      style={{ color: '#5E7057' }}
+                    >
+                      {percentage}%
+                    </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
+                  <p
+                    className="text-[12px] mb-[8px]"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {trait.description}
+                  </p>
+                  <div
+                    className="w-full rounded-full h-[8px]"
+                    style={{ backgroundColor: '#E8E8E8' }}
+                  >
                     <div
-                      className="h-3 rounded-full transition-all duration-300"
-                      style={{ width: `${percentage}%`, backgroundColor: trait.color }}
+                      className="h-[8px] rounded-full transition-all duration-300"
+                      style={{ width: `${percentage}%`, backgroundColor: '#5E7057' }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{trait.description}</p>
                 </div>
               );
             })}
@@ -125,15 +300,29 @@ export default function Big5StatsPage() {
         </div>
 
         {/* 업데이트 정보 */}
-        <div className="bg-white rounded-2xl p-6 shadow-md">
-          <h3 className="text-base font-semibold text-gray-800 mb-2">📊 자동 업데이트 시스템</h3>
-          <p className="text-sm text-gray-600 leading-relaxed">
+        <div
+          className="rounded-[16px] p-[16px]"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+        >
+          <h3
+            className="text-[14px] font-[600] mb-[8px]"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            📊 자동 업데이트 시스템
+          </h3>
+          <p
+            className="text-[13px] leading-relaxed"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             일기를 작성할 때마다 AI가 당신의 성격 변화를 분석하고,
             매주 자동으로 BIG5 점수를 업데이트합니다.
             (최대 변화: 주당 0.15점)
           </p>
           {currentData.lastUpdated && (
-            <p className="text-xs text-gray-500 mt-2">
+            <p
+              className="text-[11px] mt-[8px]"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               마지막 업데이트: {new Date(currentData.lastUpdated).toLocaleDateString('ko-KR')}
             </p>
           )}
