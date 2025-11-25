@@ -4,13 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDarkMode } from '../contexts/DarkModeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useSettings, useUpdateProfile, useUpdateNotifications, useUpdateDiaryTime, useUpdateTheme } from '../hooks/useApi';
-import { getToken, getTokenExpiration } from '../utils/storage';
-
 // localStorage 키 상수
 const STORAGE_KEYS = {
   DIARY_NOTIFICATION: 'catus_diary_notification',
   AI_STYLE: 'catus_ai_style',
-  LOGIN_TYPE: 'catus_login_type',
 } as const;
 
 interface ExpandedItems {
@@ -73,68 +70,6 @@ function SettingsPage() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saveType, setSaveType] = useState<SaveType>('');
-
-  // JWT 토큰 만료 정보 (디버그용)
-  const [tokenInfo, setTokenInfo] = useState<{
-    expiresAt: string;
-    remainingTime: string;
-    isExpired: boolean;
-  } | null>(null);
-
-  // 소셜 로그인 여부 (카카오 등)
-  const [isSocialLogin, setIsSocialLogin] = useState(false);
-
-  // 소셜 로그인 여부 확인
-  useEffect(() => {
-    const loginType = localStorage.getItem(STORAGE_KEYS.LOGIN_TYPE);
-    setIsSocialLogin(loginType === 'kakao');
-  }, []);
-
-  // 토큰 정보 업데이트 (1초마다)
-  useEffect(() => {
-    const updateTokenInfo = () => {
-      const token = getToken();
-      if (!token) {
-        setTokenInfo(null);
-        return;
-      }
-
-      const expiration = getTokenExpiration(token);
-      if (!expiration) {
-        setTokenInfo(null);
-        return;
-      }
-
-      const now = Date.now();
-      const remainingMs = expiration - now;
-      const isExpired = remainingMs <= 0;
-
-      // 만료 시간 포맷팅
-      const expiresAt = new Date(expiration).toLocaleString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      });
-
-      // 남은 시간 포맷팅
-      let remainingTime = '만료됨';
-      if (!isExpired) {
-        const hours = Math.floor(remainingMs / (1000 * 60 * 60));
-        const minutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((remainingMs % (1000 * 60)) / 1000);
-        remainingTime = `${hours}시간 ${minutes}분 ${seconds}초`;
-      }
-
-      setTokenInfo({ expiresAt, remainingTime, isExpired });
-    };
-
-    updateTokenInfo();
-    const interval = setInterval(updateTokenInfo, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // 개별 항목 토글 (한 번에 하나씩만 열림)
   const toggleItem = (item: keyof ExpandedItems): void => {
@@ -590,73 +525,69 @@ function SettingsPage() {
               )}
               </AnimatePresence>
 
-              {/* 비밀번호 변경 - 소셜 로그인 사용자에게는 숨김 */}
-              {!isSocialLogin && (
-                <>
-                  <div className="flex justify-between items-center cursor-pointer transition-all active:scale-98" style={{ paddingTop: '16px', paddingBottom: '16px' }} onClick={() => toggleItem('password')}>
-                    <span className="text-[#333]" style={{ fontSize: '15px' }}>비밀번호 변경</span>
-                    <span className="text-[#999]" style={{ fontSize: '18px' }}>›</span>
-                  </div>
-                  <AnimatePresence>
-                  {expandedItems.password && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      style={{ overflow: 'hidden' }}
+              {/* 비밀번호 변경 */}
+              <div className="flex justify-between items-center cursor-pointer transition-all active:scale-98" style={{ paddingTop: '16px', paddingBottom: '16px' }} onClick={() => toggleItem('password')}>
+                <span className="text-[#333]" style={{ fontSize: '15px' }}>비밀번호 변경</span>
+                <span className="text-[#999]" style={{ fontSize: '18px' }}>›</span>
+              </div>
+              <AnimatePresence>
+              {expandedItems.password && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                <div style={{ paddingTop: '16px', paddingBottom: '16px', paddingLeft: '0px', paddingRight: '0px' }}>
+                  <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>현재 비밀번호</div>
+                  <input
+                    type="password"
+                    className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
+                    style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
+                    placeholder="현재 비밀번호를 입력하세요"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                  <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>새 비밀번호</div>
+                  <input
+                    type="password"
+                    className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
+                    style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
+                    placeholder="새 비밀번호를 입력하세요"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                  <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>새 비밀번호 확인</div>
+                  <input
+                    type="password"
+                    className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
+                    style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
+                    placeholder="새 비밀번호를 다시 입력하세요"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                  <div className="flex" style={{ gap: '8px', marginTop: '16px' }}>
+                    <button
+                      className="flex-1 bg-white text-[#666] font-semibold cursor-pointer transition-all active:scale-93"
+                      style={{ paddingTop: '12px', paddingBottom: '12px', border: '2px solid #e0e0e0', borderRadius: '12px', fontSize: '14px' }}
+                      onClick={handleCancelPassword}
                     >
-                    <div style={{ paddingTop: '16px', paddingBottom: '16px', paddingLeft: '0px', paddingRight: '0px' }}>
-                      <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>현재 비밀번호</div>
-                      <input
-                        type="password"
-                        className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
-                        style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
-                        placeholder="현재 비밀번호를 입력하세요"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                      />
-                      <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>새 비밀번호</div>
-                      <input
-                        type="password"
-                        className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
-                        style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
-                        placeholder="새 비밀번호를 입력하세요"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                      />
-                      <div className="text-[#666] font-semibold" style={{ fontSize: '13px', marginTop: '16px', marginBottom: '6px' }}>새 비밀번호 확인</div>
-                      <input
-                        type="password"
-                        className="w-full border border-[#e0e0e0] focus:outline-none focus:border-[#5F6F52]"
-                        style={{ paddingTop: '10px', paddingBottom: '10px', paddingLeft: '16px', paddingRight: '16px', borderRadius: '12px', fontSize: '15px', boxSizing: 'border-box' }}
-                        placeholder="새 비밀번호를 다시 입력하세요"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                      />
-                      <div className="flex" style={{ gap: '8px', marginTop: '16px' }}>
-                        <button
-                          className="flex-1 bg-white text-[#666] font-semibold cursor-pointer transition-all active:scale-93"
-                          style={{ paddingTop: '12px', paddingBottom: '12px', border: '2px solid #e0e0e0', borderRadius: '12px', fontSize: '14px' }}
-                          onClick={handleCancelPassword}
-                        >
-                          취소
-                        </button>
-                        <button
-                          className="flex-1 text-[white] font-semibold cursor-pointer transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={{ paddingTop: '12px', paddingBottom: '12px', backgroundColor: (!currentPassword || !newPassword || !confirmPassword) ? '#ccc' : '#a3b899', border: 'none', borderRadius: '12px', fontSize: '14px' }}
-                          onClick={handleSavePassword}
-                          disabled={!currentPassword || !newPassword || !confirmPassword}
-                        >
-                          변경
-                        </button>
-                      </div>
-                    </div>
-                    </motion.div>
-                  )}
-                  </AnimatePresence>
-                </>
+                      취소
+                    </button>
+                    <button
+                      className="flex-1 text-[white] font-semibold cursor-pointer transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ paddingTop: '12px', paddingBottom: '12px', backgroundColor: (!currentPassword || !newPassword || !confirmPassword) ? '#ccc' : '#a3b899', border: 'none', borderRadius: '12px', fontSize: '14px' }}
+                      onClick={handleSavePassword}
+                      disabled={!currentPassword || !newPassword || !confirmPassword}
+                    >
+                      변경
+                    </button>
+                  </div>
+                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
             </div>
         </div>
 
@@ -846,52 +777,6 @@ function SettingsPage() {
               </div>
             </div>
         </div>
-
-        {/* JWT 토큰 정보 (디버그용) */}
-        {tokenInfo && (
-          <div style={{ marginBottom: '32px' }}>
-            <h3 className="text-[#999] font-semibold text-center" style={{ fontSize: '12px', margin: '0 0 8px 0', paddingLeft: '16px', paddingRight: '16px' }}>🔐 토큰 정보 (테스트용)</h3>
-            <div className="bg-[white]" style={{ borderRadius: '16px', paddingTop: '16px', paddingBottom: '16px', paddingLeft: '16px', paddingRight: '16px', marginBottom: '8px' }}>
-              {/* 만료 시간 */}
-              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                <span className="text-[#666]" style={{ fontSize: '14px' }}>만료 시간</span>
-                <span className="text-[#333] font-medium" style={{ fontSize: '13px' }}>{tokenInfo.expiresAt}</span>
-              </div>
-
-              {/* 남은 시간 */}
-              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                <span className="text-[#666]" style={{ fontSize: '14px' }}>남은 시간</span>
-                <span
-                  className="font-bold"
-                  style={{
-                    fontSize: '14px',
-                    color: tokenInfo.isExpired ? '#ef4444' : '#22c55e'
-                  }}
-                >
-                  {tokenInfo.remainingTime}
-                </span>
-              </div>
-
-              {/* 상태 */}
-              <div className="flex justify-between items-center" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
-                <span className="text-[#666]" style={{ fontSize: '14px' }}>상태</span>
-                <span
-                  className="font-bold px-3 py-1 rounded-full"
-                  style={{
-                    fontSize: '12px',
-                    backgroundColor: tokenInfo.isExpired ? '#fef2f2' : '#f0fdf4',
-                    color: tokenInfo.isExpired ? '#ef4444' : '#22c55e'
-                  }}
-                >
-                  {tokenInfo.isExpired ? '❌ 만료됨' : '✅ 유효'}
-                </span>
-              </div>
-            </div>
-            <p className="text-center text-[#999]" style={{ fontSize: '11px', marginTop: '4px' }}>
-              JWT 토큰 만료 시간: 24시간
-            </p>
-          </div>
-        )}
 
         {/* 기타 */}
         <div style={{ marginBottom: '8px' }}>
