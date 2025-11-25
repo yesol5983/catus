@@ -13,7 +13,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-main-bg flex flex-col items-center justify-center py-4 px-6 overflow-hidden">
+    <div className="min-h-screen flex flex-col items-center justify-center py-4 px-6 overflow-hidden" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       {/* 중앙 그룹 전체 묶음 */}
       <div className="flex flex-col items-center justify-center w-full max-w-md">
 
