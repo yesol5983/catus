@@ -328,6 +328,7 @@ export default function ChatAnalysisPage() {
                   prev2Label={null}
                   minDate={new Date(2025, 0, 1)}
                   maxDate={new Date()}
+                  minDetail="year"
                   tileClassName={({ date, view }) => {
                     const classes: string[] = [];
                     if (view === 'month') {
