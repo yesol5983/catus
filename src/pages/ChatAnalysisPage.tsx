@@ -328,8 +328,6 @@ export default function ChatAnalysisPage() {
                   prev2Label={null}
                   minDate={new Date(2025, 0, 1)}
                   maxDate={new Date()}
-                  maxDetail="month"
-                  minDetail="year"
                   tileClassName={({ date, view }) => {
                     const classes: string[] = [];
                     if (view === 'month') {
@@ -411,6 +409,11 @@ export default function ChatAnalysisPage() {
 
         .react-calendar__navigation button:hover {
           background: rgba(94, 112, 87, 0.15) !important;
+        }
+
+        .react-calendar__navigation button:focus,
+        .react-calendar__navigation button:active {
+          background: var(--color-main-bg) !important;
         }
 
         .react-calendar__navigation button:disabled {
@@ -541,8 +544,11 @@ export default function ChatAnalysisPage() {
           background: rgba(94, 112, 87, 0.15);
         }
 
-        .react-calendar__year-view__months__month.current-month {
+        .react-calendar__tile.current-month {
           background: #5E7057 !important;
+        }
+
+        .react-calendar__tile.current-month abbr {
           color: #FFFFFF !important;
         }
 
