@@ -82,7 +82,10 @@ export default async function handler(req, res) {
     const requestHeaders = {
       'Content-Type': req.headers['content-type'] || 'application/json',
       'Authorization': req.headers['authorization'],
-      'Origin': req.headers['origin'],
+      'Origin': req.headers['origin'] || 'https://catus-frontend-umber.vercel.app',
+      'X-Forwarded-For': req.headers['x-forwarded-for'] || req.socket?.remoteAddress,
+      'X-Forwarded-Host': req.headers['host'],
+      'X-Forwarded-Proto': 'https',
     };
 
     console.log('🔧 [AXIOS CONFIG]', {
