@@ -83,11 +83,11 @@ export default function Big5TestPage() {
   const currentQ = BIG5_QUESTIONS[currentQuestion];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+    <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: 'var(--color-main-bg)' }}>
       {/* 헤더 + 진행도 */}
-      <div className="w-full flex flex-col items-center pt-[16px] pb-[16px] sticky top-0 z-30" style={{ backgroundColor: 'var(--color-main-bg)' }}>
+      <div className="w-full flex flex-col items-center pt-[16px] pb-[16px]" style={{ backgroundColor: 'var(--color-main-bg)' }}>
         {/* 제목 */}
-        <h1 className="text-[18px] font-[600] text-center whitespace-nowrap mb-[4px]" style={{ color: 'var(--color-text-primary)' }}>
+        <h1 className="text-[22px] font-[600] text-center whitespace-nowrap mb-[4px]" style={{ color: 'var(--color-text-primary)' }}>
           🧠 BIG5 성격 검사
         </h1>
         {/* 설명 */}
@@ -117,69 +117,69 @@ export default function Big5TestPage() {
         </p>
       </div>
 
-      {/* 질문 */}
-      <div className="flex-1 flex items-center justify-center py-[16px] px-[10%]">
-        <div className="w-full">
-          <div className="rounded-[16px] p-[24px]" style={{ backgroundColor: 'var(--color-bg-card)' }}>
-            <p className="text-[18px] text-center mb-[24px] leading-[1.6]" style={{ color: 'var(--color-text-primary)' }}>
-              {currentQ.text}
-            </p>
+      {/* 질문 + 답변 */}
+      <div className="flex-1 flex flex-col justify-center px-[10%]">
+        {/* 질문 */}
+        <p className="text-[18px] text-center mb-[20px] leading-[1.6]" style={{ color: 'var(--color-text-primary)' }}>
+          {currentQ.text}
+        </p>
 
-            {/* 답변 선택 */}
-            <div className="flex flex-col gap-[12px]">
-              {SCORE_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => handleAnswerSelect(option.value)}
-                  className={`w-full py-[16px] px-[16px] rounded-[12px] border-0 cursor-pointer transition-all text-[15px] ${
-                    selectedAnswer === option.value
-                      ? 'bg-[rgba(89,180,100,0.15)] text-[#59B464] font-[500]'
-                      : 'bg-[white] font-[400]'
-                  }`}
-                  style={{ color: selectedAnswer === option.value ? '#59B464' : 'var(--color-text-primary)' }}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* 구분선 */}
+        <div className="w-full h-[1px] mb-[20px]" style={{ backgroundColor: 'var(--color-border)' }} />
 
-          {/* 네비게이션 버튼 */}
-          <div className="flex gap-[16px] mt-[24px]">
-            {currentQuestion > 0 && (
-              <button
-                onClick={handlePrevious}
-                disabled={submitTestMutation.isPending}
-                className="flex-1 py-[12px] px-[24px] rounded-[12px] border-0 cursor-pointer text-[15px] font-[500] disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ backgroundColor: 'var(--color-bg-card)', color: 'var(--color-text-primary)' }}
-              >
-                이전
-              </button>
-            )}
+        {/* 답변 선택 */}
+        <div className="flex flex-col gap-[10px]">
+          {SCORE_OPTIONS.map((option) => (
             <button
-              onClick={handleNext}
-              disabled={selectedAnswer === null || submitTestMutation.isPending}
-              className={`flex-1 py-[12px] px-[24px] rounded-[12px] border-0 cursor-pointer text-[15px] font-[500] text-[white] disabled:cursor-not-allowed ${
-                selectedAnswer === null ? 'bg-[#ccc]' : 'bg-[#59B464]'
+              key={option.value}
+              onClick={() => handleAnswerSelect(option.value)}
+              className={`w-full py-[14px] px-[16px] rounded-[12px] border-0 cursor-pointer transition-all text-[15px] ${
+                selectedAnswer === option.value
+                  ? 'bg-[rgba(89,180,100,0.15)] text-[#59B464] font-[500]'
+                  : 'bg-[white] font-[400]'
               }`}
+              style={{ color: selectedAnswer === option.value ? '#59B464' : 'var(--color-text-primary)' }}
             >
-              {currentQuestion < BIG5_QUESTIONS.length - 1
-                ? '다음'
-                : submitTestMutation.isPending
-                ? '제출 중...'
-                : '완료'}
+              {option.label}
             </button>
-          </div>
-
-          {/* 도움말 */}
-          {currentQuestion === 0 && (
-            <div className="mt-[24px] p-[16px] rounded-[12px] bg-[rgba(89,180,100,0.1)]">
-              <p className="text-[14px] text-center text-[#59B464]">
-                💡 솔직하게 답변할수록 더 정확한 분석이 가능해요
-              </p>
-            </div>
-          )}
+          ))}
         </div>
+
+        {/* 네비게이션 버튼 */}
+        <div className="flex gap-[16px] mt-[24px]">
+          {currentQuestion > 0 && (
+            <button
+              onClick={handlePrevious}
+              disabled={submitTestMutation.isPending}
+              className="flex-1 py-[12px] px-[24px] rounded-[12px] border-0 cursor-pointer text-[15px] font-[500] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: 'var(--color-bg-card)', color: 'var(--color-text-primary)' }}
+            >
+              이전
+            </button>
+          )}
+          <button
+            onClick={handleNext}
+            disabled={selectedAnswer === null || submitTestMutation.isPending}
+            className={`flex-1 py-[12px] px-[24px] rounded-[12px] border-0 cursor-pointer text-[15px] font-[500] text-[white] disabled:cursor-not-allowed ${
+              selectedAnswer === null ? 'bg-[#ccc]' : 'bg-[#59B464]'
+            }`}
+          >
+            {currentQuestion < BIG5_QUESTIONS.length - 1
+              ? '다음'
+              : submitTestMutation.isPending
+              ? '제출 중...'
+              : '완료'}
+          </button>
+        </div>
+
+        {/* 도움말 */}
+        {currentQuestion === 0 && (
+          <div className="mt-[20px] p-[14px] rounded-[12px] bg-[rgba(89,180,100,0.1)]">
+            <p className="text-[13px] text-center text-[#59B464]">
+              💡 솔직하게 답변할수록 더 정확한 분석이 가능해요
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
