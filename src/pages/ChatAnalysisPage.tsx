@@ -328,6 +328,8 @@ export default function ChatAnalysisPage() {
                   prev2Label={null}
                   minDate={new Date(2025, 0, 1)}
                   maxDate={new Date()}
+                  maxDetail="month"
+                  minDetail="year"
                   tileClassName={({ date, view }) => {
                     const classes: string[] = [];
                     if (view === 'month') {
@@ -541,7 +543,7 @@ export default function ChatAnalysisPage() {
 
         .react-calendar__year-view__months__month.current-month {
           background: #5E7057 !important;
-          color: white !important;
+          color: #FFFFFF !important;
         }
 
         .react-calendar__tile--hasActive {
@@ -549,45 +551,6 @@ export default function ChatAnalysisPage() {
           color: white !important;
         }
 
-        /* 10년 단위 뷰 */
-        .react-calendar__decade-view__years {
-          display: grid !important;
-          grid-template-columns: repeat(3, 1fr) !important;
-          gap: 8px;
-        }
-
-        .react-calendar__decade-view__years__year {
-          padding: 16px 8px !important;
-          background: var(--color-main-bg);
-          border-radius: 12px;
-          font-size: 14px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-        }
-
-        .react-calendar__decade-view__years__year:hover {
-          background: rgba(94, 112, 87, 0.15);
-        }
-
-        /* 100년 단위 뷰 */
-        .react-calendar__century-view__decades {
-          display: grid !important;
-          grid-template-columns: repeat(3, 1fr) !important;
-          gap: 8px;
-        }
-
-        .react-calendar__century-view__decades__decade {
-          padding: 16px 8px !important;
-          background: var(--color-main-bg);
-          border-radius: 12px;
-          font-size: 13px;
-          font-weight: 500;
-          color: var(--color-text-primary);
-        }
-
-        .react-calendar__century-view__decades__decade:hover {
-          background: rgba(94, 112, 87, 0.15);
-        }
       `}</style>
     </div>
   );
