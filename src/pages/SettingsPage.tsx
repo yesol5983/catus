@@ -106,7 +106,9 @@ function SettingsPage() {
     if (type === 'encouragement') {
       try {
         // React Query mutation으로 API 호출 - anonymous 필드 사용
-        await updateNotificationsMutation.mutateAsync(newValue);
+        console.log('📤 [Settings] 알림 설정 변경 요청:', { anonymous: newValue });
+        const result = await updateNotificationsMutation.mutateAsync(newValue);
+        console.log('✅ [Settings] 알림 설정 변경 성공:', result);
       } catch (error: any) {
         console.error('Failed to save notification settings:', error);
         // 실패 시 원래 상태로 되돌리기
@@ -142,9 +144,11 @@ function SettingsPage() {
 
     // 백엔드에도 저장 (실패해도 로컬은 유지)
     try {
-      await updateThemeMutation.mutateAsync(newValue);
+      console.log('📤 [Settings] 다크모드 변경 요청:', { darkMode: newValue });
+      const result = await updateThemeMutation.mutateAsync(newValue);
+      console.log('✅ [Settings] 다크모드 변경 성공:', result);
     } catch (error) {
-      console.error('Failed to sync theme with backend:', error);
+      console.error('❌ [Settings] 다크모드 동기화 실패:', error);
       // 백엔드 동기화 실패해도 로컬 설정은 유지 (UX 우선)
     }
   };
@@ -163,11 +167,13 @@ function SettingsPage() {
 
     try {
       // React Query mutation으로 프로필 업데이트
-      await updateProfileMutation.mutateAsync({ nickname: newNickname });
+      console.log('📤 [Settings] 닉네임 변경 요청:', { nickname: newNickname });
+      const result = await updateProfileMutation.mutateAsync({ nickname: newNickname });
+      console.log('✅ [Settings] 닉네임 변경 성공:', result);
       setUserNickname(newNickname);
       setSaveSuccess(true);
     } catch (error: any) {
-      console.error('Failed to save nickname:', error);
+      console.error('❌ [Settings] 닉네임 변경 실패:', error);
       // 에러 유형에 따른 구체적인 메시지
       if (error?.status === 409) {
         alert('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.');
@@ -213,14 +219,16 @@ function SettingsPage() {
     try {
       // React Query mutation으로 비밀번호 업데이트 (프로필 API 사용)
       // currentPassword를 함께 전송하여 백엔드에서 검증
-      await updateProfileMutation.mutateAsync({
+      console.log('📤 [Settings] 비밀번호 변경 요청:', { nickname: userNickname, password: '***', currentPassword: '***' });
+      const result = await updateProfileMutation.mutateAsync({
         nickname: userNickname,
         password: newPassword,
         currentPassword: currentPassword
       });
+      console.log('✅ [Settings] 비밀번호 변경 성공:', result);
       setSaveSuccess(true);
     } catch (error: any) {
-      console.error('Failed to save password:', error);
+      console.error('❌ [Settings] 비밀번호 변경 실패:', error);
       // 에러 유형에 따른 구체적인 메시지
       if (error?.status === 401 || error?.status === 403) {
         alert('현재 비밀번호가 일치하지 않습니다.');
@@ -262,13 +270,15 @@ function SettingsPage() {
       const alarmTime = `${hour24}:${tempDiaryTime.minute}`;
 
       // React Query mutation으로 일기 시간 업데이트
-      await updateDiaryTimeMutation.mutateAsync(alarmTime);
+      console.log('📤 [Settings] 일기 생성 시간 변경 요청:', { time: alarmTime });
+      const result = await updateDiaryTimeMutation.mutateAsync(alarmTime);
+      console.log('✅ [Settings] 일기 생성 시간 변경 성공:', result);
 
       // 성공 시 로컬 상태 업데이트
       setDiaryTime(tempDiaryTime);
       setSaveSuccess(true);
     } catch (error: any) {
-      console.error('Failed to save diary time:', error);
+      console.error('❌ [Settings] 일기 생성 시간 변경 실패:', error);
       // 에러 유형에 따른 구체적인 메시지
       if (error?.status === 400) {
         alert('시간 형식이 올바르지 않습니다.');
