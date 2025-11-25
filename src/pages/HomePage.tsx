@@ -137,7 +137,7 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
   const cactusScale = 0.9 + (heightRatio - 1) * 0.5;
 
   // 가로 모드에서 선인장 위치 조정
-  const cactusTop = isLandscape ? "36%" : "34%";
+  const cactusTop = isLandscape ? "37%" : "34%";
 
   const openChat = (): void => navigate(ROUTES.CHAT);
 
@@ -709,14 +709,14 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
       {/* 하단 채팅 인풋바 */}
       {!hideButtons && !backgroundOnly && (
         <div
-          className="chat-input-bar fixed bottom-0 z-50 cursor-pointer group"
+          className="fixed bottom-0 z-50 cursor-pointer group"
           style={{ width: '70%', padding: '3px', left: '46%', transform: 'translateX(-50%)' }}
           onClick={openChat}
         >
           <input
             type="text"
             placeholder="오늘 하루는 어땠어?"
-            className="w-full rounded-[20px] text-sm text-gray-400 bg-[white] cursor-pointer pointer-events-none transition-all duration-200 text-center"
+            className="chat-input-bar w-full rounded-[20px] text-sm text-gray-400 bg-[white] cursor-pointer pointer-events-none transition-all duration-200 text-center"
             style={{
               paddingTop: '13px',
               paddingBottom: '13px',
