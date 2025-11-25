@@ -176,6 +176,7 @@ export default function CalendarPage() {
                     onActiveStartDateChange={({ activeStartDate }) => activeStartDate && setCurrentDate(activeStartDate)}
                     onClickDay={handleDayClick}
                     tileContent={tileContent}
+                    showNeighboringMonth={false}
                     locale="en-US"
                     formatDay={(locale, date) => date.getDate().toString()}
                     formatShortWeekday={(locale, date) => {
@@ -428,16 +429,22 @@ export default function CalendarPage() {
           transform: scale(1.1);
         }
 
-        .react-calendar__tile--active {
+        .react-calendar__tile--active,
+        .react-calendar__tile--active:enabled,
+        .react-calendar__tile--active:enabled:focus,
+        .react-calendar__tile--active:focus,
+        .react-calendar button:focus {
           background: transparent !important;
+          outline: none !important;
         }
 
-        .react-calendar__tile--active:enabled:hover,
-        .react-calendar__tile--active:enabled:focus {
+        .react-calendar__tile--active:enabled:hover {
           background: rgba(95, 111, 82, 0.1) !important;
         }
 
-        .react-calendar__tile--hasActive {
+        .react-calendar__tile--hasActive,
+        .react-calendar__tile--hasActive:enabled,
+        .react-calendar__tile--hasActive:enabled:focus {
           background: transparent !important;
         }
 
@@ -445,27 +452,30 @@ export default function CalendarPage() {
           background: rgba(95, 111, 82, 0.1);
         }
 
-        .react-calendar__tile:focus {
-          background: transparent;
+        .react-calendar__tile:focus,
+        .react-calendar__tile:focus-visible {
+          background: transparent !important;
+          outline: none !important;
         }
 
-        .react-calendar__tile--neighboringMonth {
+        .react-calendar__tile--neighboringMonth,
+        .react-calendar__month-view__days__day--neighboringMonth {
+          display: none !important;
           visibility: hidden !important;
           height: 0 !important;
           min-height: 0 !important;
+          max-height: 0 !important;
           padding: 0 !important;
           margin: 0 !important;
           pointer-events: none !important;
           overflow: hidden !important;
+          opacity: 0 !important;
         }
 
-        .react-calendar__tile--neighboringMonth * {
+        .react-calendar__tile--neighboringMonth *,
+        .react-calendar__month-view__days__day--neighboringMonth * {
           display: none !important;
-        }
-
-        .react-calendar__month-view__days__day--neighboringMonth {
           visibility: hidden !important;
-          height: 0 !important;
         }
       `}</style>
 

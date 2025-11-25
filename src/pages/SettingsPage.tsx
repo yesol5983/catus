@@ -448,14 +448,14 @@ function SettingsPage() {
                   />
                   <div className="flex" style={{ gap: '8px', marginTop: '16px' }}>
                     <button
-                      className="flex-1 bg-white text-[#666] font-semibold cursor-pointer transition-all active:scale-93"
+                      className="flex-1 bg-[white] text-[#666] cursor-pointer transition-all active:scale-93"
                       style={{ paddingTop: '12px', paddingBottom: '12px', border: '2px solid #e0e0e0', borderRadius: '12px', fontSize: '14px' }}
                       onClick={handleCancelNickname}
                     >
                       취소
                     </button>
                     <button
-                      className="flex-1 text-[#FFFFFF] font-semibold cursor-pointer transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 text-[#FFFFFF] cursor-pointer transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{ paddingTop: '12px', paddingBottom: '12px', backgroundColor: !newNickname ? '#ccc' : '#a3b899', border: 'none', borderRadius: '12px', fontSize: '14px' }}
                       onClick={handleSaveNickname}
                       disabled={!newNickname}
