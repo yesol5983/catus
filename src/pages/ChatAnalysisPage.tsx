@@ -326,12 +326,22 @@ export default function ChatAnalysisPage() {
                   formatMonth={(_, date) => `${date.getMonth() + 1}월`}
                   next2Label={null}
                   prev2Label={null}
+                  minDate={new Date(2025, 0, 1)}
                   maxDate={new Date()}
-                  tileClassName={({ date }) => {
-                    const day = date.getDay();
-                    if (day === 0) return 'sunday';
-                    if (day === 6) return 'saturday';
-                    return null;
+                  tileClassName={({ date, view }) => {
+                    const classes: string[] = [];
+                    if (view === 'month') {
+                      const day = date.getDay();
+                      if (day === 0) classes.push('sunday');
+                      if (day === 6) classes.push('saturday');
+                    }
+                    if (view === 'year') {
+                      const now = new Date();
+                      if (date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear()) {
+                        classes.push('current-month');
+                      }
+                    }
+                    return classes.length > 0 ? classes.join(' ') : null;
                   }}
                 />
 
@@ -527,6 +537,11 @@ export default function ChatAnalysisPage() {
 
         .react-calendar__year-view__months__month:hover {
           background: rgba(94, 112, 87, 0.15);
+        }
+
+        .react-calendar__year-view__months__month.current-month {
+          background: #5E7057 !important;
+          color: white !important;
         }
 
         .react-calendar__tile--hasActive {
