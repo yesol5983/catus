@@ -25,6 +25,7 @@ export default function ChatAnalysisPage() {
     },
     summary: '분석 기간 동안 전반적으로 긍정적인 감정 상태를 유지하고 있습니다. 특히 친화성이 높게 나타나 대인관계에서 협조적이고 따뜻한 성향을 보입니다. 개방성도 높아 새로운 경험에 대한 호기심이 많으며, 창의적인 사고를 즐기는 편입니다.\n\n신경증 점수가 낮아 정서적으로 안정되어 있으며, 스트레스 상황에서도 비교적 침착하게 대처하는 모습을 보입니다.',
   });
+  const [showResultSheet, setShowResultSheet] = useState(true); // 디자인 확인용 true
   const [showCalendar, setShowCalendar] = useState<'start' | 'end' | null>(null);
   const [pickerMode, setPickerMode] = useState<'calendar' | 'year' | 'month'>('calendar');
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -199,109 +200,159 @@ export default function ChatAnalysisPage() {
           </button>
         </div>
 
-        {/* 분석 결과 - 스크롤 가능 영역 */}
-        {analysisResult && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col gap-[12px]"
-          >
-            {/* 기간 */}
-            <div
-              className="rounded-[16px] p-[16px] flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-bg-card)' }}
-            >
-              <h3
-                className="text-[15px] font-[600] mb-[8px] flex items-center gap-[8px]"
-                style={{ color: 'var(--color-text-primary)' }}
-              >
-                <span>📅</span>
-                <span>분석 기간</span>
-              </h3>
-              <p
-                className="text-[14px]"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {analysisResult.period.start} ~ {analysisResult.period.end}
-              </p>
-            </div>
-
-            {/* Big5 점수 */}
-            <div
-              className="rounded-[16px] p-[16px] flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-bg-card)' }}
-            >
-              <h3
-                className="text-[15px] font-[600] mb-[12px] flex items-center gap-[8px]"
-                style={{ color: 'var(--color-text-primary)' }}
-              >
-                <span>🧠</span>
-                <span>성격 분석 결과</span>
-              </h3>
-              <div className="flex flex-col gap-[12px]">
-                {[
-                  { key: 'openness', name: '개방성' },
-                  { key: 'conscientiousness', name: '성실성' },
-                  { key: 'extraversion', name: '외향성' },
-                  { key: 'agreeableness', name: '친화성' },
-                  { key: 'neuroticism', name: '신경증' },
-                ].map(({ key, name }) => {
-                  const score = analysisResult.emotionScores[key as keyof typeof analysisResult.emotionScores] || 0;
-                  const percentage = Math.min(100, Math.round(score * 10));
-                  return (
-                    <div key={key}>
-                      <div className="flex justify-between items-center mb-[4px]">
-                        <span
-                          className="text-[13px] font-[500]"
-                          style={{ color: 'var(--color-text-primary)' }}
-                        >
-                          {name}
-                        </span>
-                        <span
-                          className="text-[13px] font-[600]"
-                          style={{ color: '#5E7057' }}
-                        >
-                          {percentage}%
-                        </span>
-                      </div>
-                      <div
-                        className="w-full rounded-full h-[6px]"
-                        style={{ backgroundColor: '#E8E8E8' }}
-                      >
-                        <div
-                          className="h-[6px] rounded-full transition-all duration-500"
-                          style={{ width: `${percentage}%`, backgroundColor: '#5E7057' }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 요약 */}
-            <div
-              className="rounded-[16px] p-[16px] flex-shrink-0"
-              style={{ backgroundColor: 'var(--color-bg-card)' }}
-            >
-              <h3
-                className="text-[15px] font-[600] mb-[8px] flex items-center gap-[8px]"
-                style={{ color: 'var(--color-text-primary)' }}
-              >
-                <span>💬</span>
-                <span>분석 요약</span>
-              </h3>
-              <p
-                className="text-[13px] leading-relaxed whitespace-pre-wrap"
-                style={{ color: 'var(--color-text-secondary)' }}
-              >
-                {analysisResult.summary}
-              </p>
-            </div>
-          </motion.div>
-        )}
       </div>
+
+      {/* 분석 결과 Bottom Sheet */}
+      <AnimatePresence>
+        {analysisResult && showResultSheet && (
+          <div
+            onClick={() => setShowResultSheet(false)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'flex-end',
+            }}
+          >
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              className="w-full rounded-t-[24px] max-h-[85vh] flex flex-col overflow-hidden"
+              style={{
+                backgroundColor: 'var(--color-bg-card)',
+                zIndex: 10001,
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* 고정 헤더 영역 */}
+              <div className="flex-shrink-0 pt-[16px] pb-[12px] flex flex-col items-center px-[20px]">
+                {/* 핸들바 */}
+                <div
+                  className="w-[40px] h-[4px] rounded-full mb-[16px]"
+                  style={{ backgroundColor: '#D1D5DB' }}
+                />
+
+                {/* 제목 */}
+                <h2
+                  className="text-[18px] font-[600] mb-[4px] text-center"
+                  style={{ color: 'var(--color-text-primary)' }}
+                >
+                  채팅 분석 결과
+                </h2>
+                <p
+                  className="text-[13px] mb-[12px]"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {analysisResult.period.start} ~ {analysisResult.period.end}
+                </p>
+
+                {/* 구분선 */}
+                <div
+                  className="border-t w-full"
+                  style={{ borderColor: 'var(--color-border)' }}
+                />
+              </div>
+
+              {/* 스크롤 가능한 콘텐츠 영역 */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden px-[20px] pb-[32px]">
+                <div className="flex flex-col gap-[16px] pt-[16px]">
+                  {/* Big5 점수 */}
+                  <div>
+                    <h3
+                      className="text-[15px] font-[600] mb-[12px] flex items-center gap-[8px]"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      <span>🧠</span>
+                      <span>성격 분석 결과</span>
+                    </h3>
+                    <div className="flex flex-col gap-[12px]">
+                      {[
+                        { key: 'openness', name: '개방성' },
+                        { key: 'conscientiousness', name: '성실성' },
+                        { key: 'extraversion', name: '외향성' },
+                        { key: 'agreeableness', name: '친화성' },
+                        { key: 'neuroticism', name: '신경증' },
+                      ].map(({ key, name }) => {
+                        const score = analysisResult.emotionScores[key as keyof typeof analysisResult.emotionScores] || 0;
+                        const percentage = Math.min(100, Math.round(score * 10));
+                        return (
+                          <div key={key}>
+                            <div className="flex justify-between items-center mb-[4px]">
+                              <span
+                                className="text-[13px] font-[500]"
+                                style={{ color: 'var(--color-text-primary)' }}
+                              >
+                                {name}
+                              </span>
+                              <span
+                                className="text-[13px] font-[600]"
+                                style={{ color: '#5E7057' }}
+                              >
+                                {percentage}%
+                              </span>
+                            </div>
+                            <div
+                              className="w-full rounded-full h-[6px]"
+                              style={{ backgroundColor: 'var(--color-main-bg)' }}
+                            >
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${percentage}%` }}
+                                transition={{ duration: 0.8, delay: 0.2 }}
+                                className="h-[6px] rounded-full"
+                                style={{ backgroundColor: '#5E7057' }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 구분선 */}
+                  <div
+                    className="border-t"
+                    style={{ borderColor: 'var(--color-border)' }}
+                  />
+
+                  {/* 요약 */}
+                  <div>
+                    <h3
+                      className="text-[15px] font-[600] mb-[8px] flex items-center gap-[8px]"
+                      style={{ color: 'var(--color-text-primary)' }}
+                    >
+                      <span>💬</span>
+                      <span>분석 요약</span>
+                    </h3>
+                    <p
+                      className="text-[14px] leading-relaxed whitespace-pre-wrap"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {analysisResult.summary}
+                    </p>
+                  </div>
+
+                  {/* 닫기 버튼 */}
+                  <button
+                    onClick={() => setShowResultSheet(false)}
+                    className="w-full py-[14px] rounded-[12px] text-[15px] font-[500] border-0 mt-[8px]"
+                    style={{
+                      backgroundColor: '#5E7057',
+                      color: 'white',
+                    }}
+                  >
+                    확인
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* 캘린더 모달 */}
       <AnimatePresence>
