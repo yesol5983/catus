@@ -250,20 +250,23 @@ export default function DiaryDetailPage() {
       >
         <button
           onClick={() => navigate(ROUTES.CALENDAR)}
-          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
-          style={{ marginTop: '-5px' }}
+          className="hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-5px', color: isDarkMode ? '#FFFFFF' : '#5E7057' }}
         >
           ←
         </button>
 
-        <div className="text-[16px] font-[600] text-[#5E7057]">
+        <div
+          className="text-[16px] font-[600]"
+          style={{ color: isDarkMode ? '#FFFFFF' : '#5E7057' }}
+        >
           {diary.date && formatDate(diary.date)}
         </div>
 
         <button
           onClick={() => setShowEditModal(true)}
-          className="text-[#5E7057] hover:opacity-70 text-[20px] bg-transparent border-0"
-          style={{ marginTop: '-4px' }}
+          className="hover:opacity-70 text-[20px] bg-transparent border-0"
+          style={{ marginTop: '-4px', color: isDarkMode ? '#FFFFFF' : '#5E7057' }}
         >
           ⋯
         </button>
@@ -307,7 +310,7 @@ export default function DiaryDetailPage() {
               className="bg-transparent border-0 hover:opacity-70 cursor-pointer"
               style={{ marginTop: '5px', marginLeft: '-9px' }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={isDarkMode ? '#FFFFFF' : '#000000'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"></line>
                 <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
               </svg>
