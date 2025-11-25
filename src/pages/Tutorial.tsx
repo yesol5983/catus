@@ -105,16 +105,13 @@ export default function Tutorial({ onComplete }: TutorialProps) {
         break;
       }
       case 'bottom': {
-        const messageLeft = window.innerWidth - messageWidth - 20;
+        const messageLeft = Math.max(20, Math.min(window.innerWidth - messageWidth - 20, targetCenterX - messageWidth / 2));
         style = {
           top: `${targetRect.top + targetRect.height + padding}px`,
           left: `${messageLeft}px`
         };
         arrowPosition = 'top';
-        const arrowOffset = targetCenterX - messageLeft;
-        const minArrow = 30;
-        const maxArrow = messageWidth - 30;
-        arrowLeft = `${Math.max(minArrow, Math.min(maxArrow, arrowOffset))}px`;
+        arrowLeft = `${targetCenterX - messageLeft}px`;
         break;
       }
       case 'center':
