@@ -149,6 +149,65 @@ export default function DiaryDetailPage() {
     return colors[emotion || '보통'] || '#AFCBFF';
   };
 
+  // 공유 기능
+  const handleShare = async () => {
+    if (!diary) return;
+
+    const shareText = `${diary.date ? formatDate(diary.date) : '오늘'}의 일기\n\n${diary.content || ''}`;
+
+    // Web Share API 지원 확인
+    if (navigator.share) {
+      try {
+        const shareData: ShareData = {
+          title: `${diary.date ? formatDate(diary.date) : '오늘'}의 일기`,
+          text: diary.content || '',
+        };
+
+        // 이미지가 있으면 파일로 공유 시도
+        if (diary.imageUrl) {
+          try {
+            const response = await fetch(diary.imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'diary-image.png', { type: blob.type });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              shareData.files = [file];
+            }
+          } catch (imgErr) {
+            console.log('이미지 공유 실패, 텍스트만 공유:', imgErr);
+          }
+        }
+
+        await navigator.share(shareData);
+        setToastMessage('공유되었습니다');
+      } catch (err: any) {
+        // 사용자가 공유 취소한 경우
+        if (err.name === 'AbortError') {
+          return;
+        }
+        console.error('공유 실패:', err);
+        // 공유 실패 시 클립보드로 복사
+        await copyToClipboard(shareText);
+      }
+    } else {
+      // Web Share API 미지원 시 클립보드로 복사
+      await copyToClipboard(shareText);
+    }
+
+    setTimeout(() => setToastMessage(''), 3000);
+  };
+
+  // 클립보드 복사 함수
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setToastMessage('클립보드에 복사되었습니다');
+    } catch (err) {
+      console.error('클립보드 복사 실패:', err);
+      setToastMessage('공유에 실패했습니다');
+    }
+  };
+
   // Big5 점수를 퍼센트로 변환 (0-100 기준)
   const getBig5Percent = (score: number): number => {
     return Math.min(100, Math.max(0, score));
@@ -284,10 +343,7 @@ export default function DiaryDetailPage() {
 
             {/* 공유 버튼 */}
             <button
-              onClick={() => {
-                setToastMessage('공유 기능 준비 중입니다');
-                setTimeout(() => setToastMessage(''), 3000);
-              }}
+              onClick={handleShare}
               className="bg-transparent border-0 hover:opacity-70 cursor-pointer"
               style={{ marginTop: '5px', marginLeft: '-9px' }}
             >
