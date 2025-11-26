@@ -66,10 +66,11 @@ export default function ChatPage() {
 
   // 웹 음성 인식 결과를 입력창에 반영
   useEffect(() => {
+    console.log('[음성인식] transcript 변경:', transcript, '| webListening:', webListening);
     if (!isNative && transcript) {
       setInputValue(transcript);
     }
-  }, [transcript, isNative]);
+  }, [transcript, isNative, webListening]);
 
   // 음성 인식 토글
   const toggleListening = async () => {
