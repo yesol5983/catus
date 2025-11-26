@@ -334,7 +334,7 @@ export default function Big5StatsPage() {
             className="text-[13px] leading-relaxed whitespace-pre-line"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            {currentData.analysis || '일기를 작성할 때마다 AI가 당신의 성격 변화를 분석합니다.'}
+            {currentData.analysis?.replace(/^당신의 성격 분석 결과입니다\.\n\n?/, '') || '일기를 작성할 때마다 AI가 당신의 성격 변화를 분석합니다.'}
           </p>
         </div>
       </div>
