@@ -424,7 +424,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} /></div>
 
           {/* 입력 영역 */}
-          <div className="bg-white flex items-center" style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '12px', gap: '12px' }}>
+          <div className="bg-white flex items-center" style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '12px', gap: '8px' }}>
             <button
               className="flex-shrink-0 flex items-center justify-center text-[white] hover:opacity-90 transition-all active:scale-93 border-0"
               style={{ width: '40px', height: '40px', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: '12px' }}
@@ -432,7 +432,7 @@ export default function ChatPage() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>mic</span>
             </button>
-            <div className="flex-1 min-w-0 relative">
+            <div className="flex-1 min-w-0 relative" style={{ marginRight: '4px' }}>
               <input
                 type="text"
                 value={inputValue}
@@ -453,8 +453,16 @@ export default function ChatPage() {
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isAITyping}
-              className="flex-shrink-0 text-[white] text-sm font-medium hover:opacity-90 transition-all active:scale-93 disabled:opacity-50 disabled:cursor-not-allowed border-0"
-              style={{ paddingLeft: '24px', paddingRight: '24px', paddingTop: '11px', paddingBottom: '11px', backgroundColor: '#000000', borderRadius: '12px' }}
+              className="flex-shrink-0 text-[white] text-sm font-medium transition-all active:scale-93 border-0"
+              style={{
+                paddingLeft: '24px',
+                paddingRight: '24px',
+                paddingTop: '11px',
+                paddingBottom: '11px',
+                backgroundColor: '#000000',
+                borderRadius: '12px',
+                opacity: (!inputValue.trim() || isAITyping) ? 0.5 : 1,
+              }}
             >
               전송
             </button>
