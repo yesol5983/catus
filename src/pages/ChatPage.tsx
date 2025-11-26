@@ -432,7 +432,7 @@ export default function ChatPage() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>mic</span>
             </button>
-            <div className="relative" style={{ flex: '1 1 0%', minWidth: 0, maxWidth: 'calc(100% - 130px)' }}>
+            <div className="relative" style={{ flex: '1 1 auto', minWidth: 0, width: 'calc(100% - 140px)' }}>
               <input
                 type="text"
                 value={inputValue}
