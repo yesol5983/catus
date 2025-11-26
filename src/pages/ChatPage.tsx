@@ -158,15 +158,52 @@ export default function ChatPage() {
         recognitionRef.current.stop();
       } else {
         console.log('[음성인식] 시작 시도');
+
+        // 이미 실행 중이면 먼저 중지
         try {
-          // 먼저 마이크 권한 명시적 요청
-          await navigator.mediaDevices.getUserMedia({ audio: true });
-          console.log('[음성인식] 마이크 권한 획득 성공');
+          recognitionRef.current.stop();
+        } catch (e) {
+          // 이미 중지된 상태일 수 있으므로 무시
+        }
+
+        // 권한 상태 먼저 확인
+        try {
+          const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+          console.log('[음성인식] 현재 권한 상태:', permissionStatus.state);
+
+          if (permissionStatus.state === 'denied') {
+            showToast('마이크 권한이 거부되었습니다. 브라우저 설정에서 허용해주세요.', 'error');
+            return;
+          }
+        } catch (permErr) {
+          console.log('[음성인식] 권한 API 지원 안됨, 진행합니다.');
+        }
+
+        try {
+          // 마이크 권한 명시적 요청
+          console.log('[음성인식] getUserMedia 요청 중...');
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log('[음성인식] 마이크 스트림 획득 성공');
+
+          // 스트림 트랙 해제 (권한만 확인하면 됨)
+          stream.getTracks().forEach(track => track.stop());
+
+          // 약간의 딜레이 후 음성 인식 시작
+          await new Promise(resolve => setTimeout(resolve, 100));
+
           setInputValue('');
+          console.log('[음성인식] SpeechRecognition.start() 호출');
           recognitionRef.current.start();
-        } catch (err) {
-          console.error('[음성인식] 마이크 권한 요청 실패:', err);
-          showToast('마이크 권한을 허용해주세요', 'error');
+        } catch (err: any) {
+          console.error('[음성인식] 오류 발생:', err);
+
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            showToast('마이크 권한이 필요합니다. 브라우저 주소창 옆 자물쇠 아이콘을 클릭하여 마이크를 허용해주세요.', 'error');
+          } else if (err.name === 'NotFoundError') {
+            showToast('마이크를 찾을 수 없습니다. 마이크가 연결되어 있는지 확인해주세요.', 'error');
+          } else {
+            showToast(`음성 인식 오류: ${err.message || err.name}`, 'error');
+          }
         }
       }
     }
