@@ -272,10 +272,10 @@ export default function Big5StatsPage() {
           </div>
           {/* 성격 분석 결과 */}
           <p
-            className="text-[13px] leading-relaxed whitespace-pre-line mt-[16px] text-center"
+            className="text-[15px] leading-relaxed whitespace-pre-line mt-[16px] text-center"
             style={{ color: 'var(--color-text-secondary)' }}
           >
-            {currentData.analysis?.replace(/^당신의 성격 분석 결과입니다\.\n\n?/, '') || '일기를 작성할 때마다 AI가 당신의 성격 변화를 분석합니다.'}
+            {currentData.analysis?.replace(/^당신의 성격 분석 결과입니다\.\n\n?/, '').replace(/^- /gm, '') || '일기를 작성할 때마다 AI가 당신의 성격 변화를 분석합니다.'}
           </p>
         </div>
 
