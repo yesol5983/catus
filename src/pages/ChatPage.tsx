@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition as CapacitorSpeechRecognition } from '@capacitor-community/speech-recognition';
-import WebSpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { ROUTES } from "../constants/routes";
 import { EMOTION_COLORS, EMOTION_EMOJIS } from "../constants/emotionColors";
 import { useSendChatMessage } from "../hooks/useApi";
@@ -50,48 +49,76 @@ export default function ChatPage() {
   // 네이티브 앱 여부 확인
   const isNative = Capacitor.isNativePlatform();
 
-  // 웹 음성 인식 (웹 브라우저용)
-  const {
-    transcript,
-    listening: webListening,
-    resetTranscript,
-    browserSupportsSpeechRecognition
-  } = useSpeechRecognition();
+  // 음성 인식 상태
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // 네이티브 음성 인식 상태 (앱용)
-  const [nativeListening, setNativeListening] = useState(false);
+  // Web Speech API 지원 여부
+  const browserSupportsSpeechRecognition = 'webkitSpeechRecognition' in window || 'SpeechRecognition' in window;
 
-  // 통합 listening 상태
-  const listening = isNative ? nativeListening : webListening;
-
-  // 웹 음성 인식 결과를 입력창에 반영
+  // 웹 음성 인식 초기화
   useEffect(() => {
-    console.log('[음성인식] transcript 변경:', transcript, '| webListening:', webListening);
-    if (!isNative && transcript) {
-      setInputValue(transcript);
-    }
-  }, [transcript, isNative, webListening]);
+    if (isNative || !browserSupportsSpeechRecognition) return;
+
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
+
+    recognition.lang = 'ko-KR';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        finalTranscript += event.results[i][0].transcript;
+      }
+      console.log('[음성인식] 결과:', finalTranscript);
+      setInputValue(finalTranscript);
+    };
+
+    recognition.onstart = () => {
+      console.log('[음성인식] 시작됨');
+      setListening(true);
+    };
+
+    recognition.onend = () => {
+      console.log('[음성인식] 종료됨');
+      setListening(false);
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('[음성인식] 에러:', event.error);
+      setListening(false);
+      if (event.error === 'not-allowed') {
+        showToast('마이크 권한이 필요합니다', 'error');
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      recognition.stop();
+    };
+  }, [isNative, browserSupportsSpeechRecognition, showToast]);
 
   // 음성 인식 토글
-  const toggleListening = async () => {
+  const toggleListening = useCallback(async () => {
     if (isNative) {
       // 네이티브 앱: Capacitor 플러그인 사용
-      if (nativeListening) {
+      if (listening) {
         await CapacitorSpeechRecognition.stop();
-        setNativeListening(false);
+        setListening(false);
       } else {
         try {
-          // 권한 요청
           const { speechRecognition } = await CapacitorSpeechRecognition.requestPermissions();
           if (speechRecognition !== 'granted') {
             showToast('마이크 권한이 필요합니다', 'error');
             return;
           }
 
-          setNativeListening(true);
+          setListening(true);
           setInputValue('');
 
-          // 음성 인식 시작
           await CapacitorSpeechRecognition.start({
             language: 'ko-KR',
             maxResults: 1,
@@ -99,7 +126,6 @@ export default function ChatPage() {
             popup: false,
           });
 
-          // 결과 리스너
           CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
             if (data.matches && data.matches.length > 0) {
               setInputValue(data.matches[0]);
@@ -108,36 +134,27 @@ export default function ChatPage() {
 
         } catch (error) {
           console.error('음성 인식 오류:', error);
-          setNativeListening(false);
+          setListening(false);
           showToast('음성 인식을 시작할 수 없습니다', 'error');
         }
       }
     } else {
-      // 웹 브라우저: Web Speech API 사용
-      console.log('[음성인식] 웹 모드, 브라우저 지원:', browserSupportsSpeechRecognition);
-
-      if (!browserSupportsSpeechRecognition) {
+      // 웹 브라우저: Web Speech API 직접 사용
+      if (!browserSupportsSpeechRecognition || !recognitionRef.current) {
         showToast('이 브라우저에서는 음성 인식을 지원하지 않습니다. Chrome을 사용해주세요.', 'error');
         return;
       }
 
-      if (webListening) {
-        console.log('[음성인식] 중지');
-        WebSpeechRecognition.stopListening();
+      if (listening) {
+        console.log('[음성인식] 중지 시도');
+        recognitionRef.current.stop();
       } else {
-        console.log('[음성인식] 시작 시도...');
-        console.log('[음성인식] webListening 상태:', webListening);
-        resetTranscript();
-        try {
-          await WebSpeechRecognition.startListening({ language: 'ko-KR', continuous: true });
-          console.log('[음성인식] 시작 성공');
-        } catch (err) {
-          console.error('[음성인식] 시작 실패:', err);
-          showToast('음성 인식을 시작할 수 없습니다', 'error');
-        }
+        console.log('[음성인식] 시작 시도');
+        setInputValue('');
+        recognitionRef.current.start();
       }
     }
-  };
+  }, [isNative, listening, browserSupportsSpeechRecognition, showToast]);
 
   const todayLabel = new Date().toLocaleDateString("ko-KR", {
     year: "numeric",
