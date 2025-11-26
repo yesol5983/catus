@@ -113,9 +113,18 @@ export default function ChatPage() {
       }
     } else {
       // 웹 브라우저: Web Speech API 사용
+      console.log('[음성인식] 웹 모드, 브라우저 지원:', browserSupportsSpeechRecognition);
+
+      if (!browserSupportsSpeechRecognition) {
+        showToast('이 브라우저에서는 음성 인식을 지원하지 않습니다. Chrome을 사용해주세요.', 'error');
+        return;
+      }
+
       if (webListening) {
+        console.log('[음성인식] 중지');
         WebSpeechRecognition.stopListening();
       } else {
+        console.log('[음성인식] 시작');
         resetTranscript();
         WebSpeechRecognition.startListening({ language: 'ko-KR', continuous: true });
       }
