@@ -424,15 +424,28 @@ export default function ChatPage() {
         <div ref={messagesEndRef} /></div>
 
           {/* 입력 영역 */}
-          <div className="bg-white flex items-center gap-[8px]" style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px', gap: '8px' }}>
+            {/* 음성 버튼 */}
             <button
-              className="flex items-center justify-center text-[white] hover:opacity-90 transition-all active:scale-93 border-0"
-              style={{ width: '40px', height: '40px', minWidth: '40px', backgroundColor: 'rgba(0, 0, 0, 0.6)', borderRadius: '12px' }}
+              className="hover:opacity-90 transition-all active:scale-93 border-0"
+              style={{
+                width: '40px',
+                height: '40px',
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                borderRadius: '12px',
+                color: 'white'
+              }}
               aria-label="음성 입력"
             >
               <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>mic</span>
             </button>
-            <div className="relative" style={{ flex: '1 1 auto', minWidth: 0, width: 'calc(100% - 140px)' }}>
+
+            {/* 입력창 */}
+            <div style={{ flex: 1, minWidth: 0, position: 'relative' }}>
               <input
                 type="text"
                 value={inputValue}
@@ -441,8 +454,15 @@ export default function ChatPage() {
                 placeholder="메시지를 입력하세요..."
                 disabled={isAITyping}
                 maxLength={1000}
-                className="w-full border border-gray-300 rounded-[12px] text-sm focus:outline-none focus:border-[#5F6F52] disabled:bg-gray-100 disabled:text-gray-400"
-                style={{ paddingLeft: '16px', paddingRight: '16px', paddingTop: '11px', paddingBottom: '11px' }}
+                className="border border-gray-300 rounded-[12px] text-sm focus:outline-none focus:border-[#5F6F52] disabled:bg-gray-100 disabled:text-gray-400"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  paddingLeft: '16px',
+                  paddingRight: '16px',
+                  paddingTop: '11px',
+                  paddingBottom: '11px'
+                }}
               />
               {inputValue.length > 900 && (
                 <span className="absolute -top-6 right-0 text-xs text-gray-500">
@@ -450,18 +470,21 @@ export default function ChatPage() {
                 </span>
               )}
             </div>
+
+            {/* 전송 버튼 */}
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isAITyping}
-              className="text-[white] text-sm font-medium transition-all active:scale-93 border-0"
+              className="text-sm font-medium transition-all active:scale-93 border-0"
               style={{
-                paddingLeft: '24px',
-                paddingRight: '24px',
+                flexShrink: 0,
+                paddingLeft: '20px',
+                paddingRight: '20px',
                 paddingTop: '11px',
                 paddingBottom: '11px',
-                minWidth: 'fit-content',
                 backgroundColor: '#000000',
                 borderRadius: '12px',
+                color: 'white',
                 opacity: (!inputValue.trim() || isAITyping) ? 0.5 : 1,
               }}
             >
