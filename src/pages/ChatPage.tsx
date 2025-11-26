@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import { Capacitor } from '@capacitor/core';
+import { SpeechRecognition as CapacitorSpeechRecognition } from '@capacitor-community/speech-recognition';
+import WebSpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { ROUTES } from "../constants/routes";
 import { EMOTION_COLORS, EMOTION_EMOJIS } from "../constants/emotionColors";
 import { useSendChatMessage } from "../hooks/useApi";
@@ -45,28 +47,78 @@ export default function ChatPage() {
   // React Query mutations
   const sendMessageMutation = useSendChatMessage();
 
-  // 음성 인식
+  // 네이티브 앱 여부 확인
+  const isNative = Capacitor.isNativePlatform();
+
+  // 웹 음성 인식 (웹 브라우저용)
   const {
     transcript,
-    listening,
+    listening: webListening,
     resetTranscript,
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
 
-  // 음성 인식 결과를 입력창에 반영
+  // 네이티브 음성 인식 상태 (앱용)
+  const [nativeListening, setNativeListening] = useState(false);
+
+  // 통합 listening 상태
+  const listening = isNative ? nativeListening : webListening;
+
+  // 웹 음성 인식 결과를 입력창에 반영
   useEffect(() => {
-    if (transcript) {
+    if (!isNative && transcript) {
       setInputValue(transcript);
     }
-  }, [transcript]);
+  }, [transcript, isNative]);
 
   // 음성 인식 토글
-  const toggleListening = () => {
-    if (listening) {
-      SpeechRecognition.stopListening();
+  const toggleListening = async () => {
+    if (isNative) {
+      // 네이티브 앱: Capacitor 플러그인 사용
+      if (nativeListening) {
+        await CapacitorSpeechRecognition.stop();
+        setNativeListening(false);
+      } else {
+        try {
+          // 권한 요청
+          const { speechRecognition } = await CapacitorSpeechRecognition.requestPermissions();
+          if (speechRecognition !== 'granted') {
+            showToast('마이크 권한이 필요합니다', 'error');
+            return;
+          }
+
+          setNativeListening(true);
+          setInputValue('');
+
+          // 음성 인식 시작
+          await CapacitorSpeechRecognition.start({
+            language: 'ko-KR',
+            maxResults: 1,
+            partialResults: true,
+            popup: false,
+          });
+
+          // 결과 리스너
+          CapacitorSpeechRecognition.addListener('partialResults', (data: { matches: string[] }) => {
+            if (data.matches && data.matches.length > 0) {
+              setInputValue(data.matches[0]);
+            }
+          });
+
+        } catch (error) {
+          console.error('음성 인식 오류:', error);
+          setNativeListening(false);
+          showToast('음성 인식을 시작할 수 없습니다', 'error');
+        }
+      }
     } else {
-      resetTranscript();
-      SpeechRecognition.startListening({ language: 'ko-KR', continuous: true });
+      // 웹 브라우저: Web Speech API 사용
+      if (webListening) {
+        WebSpeechRecognition.stopListening();
+      } else {
+        resetTranscript();
+        WebSpeechRecognition.startListening({ language: 'ko-KR', continuous: true });
+      }
     }
   };
 
