@@ -6,7 +6,7 @@ import { ROUTES } from "../constants/routes";
 import { useTutorial } from "../contexts/TutorialContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { messageApi, settingsApi, chatApi, diaryApi } from "../utils/api";
+import { messageApi } from "../utils/api";
 import Tutorial from "./Tutorial";
 import api from "../utils/api";
 
@@ -54,7 +54,7 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
   const [isBookOpening, setIsBookOpening] = useState(false);
   const [isBig5Checked, setIsBig5Checked] = useState(false);
 
-  // 랜덤 일기 존재 여부 (API로 확인)
+  // 랜덤 일기 존재 여부 (백엔드에서 플래그 받아올 때까지 false)
   const [hasRandomDiary, setHasRandomDiary] = useState(false);
 
   // ====== 백엔드 API로 unreadCount 조회 ======
@@ -88,116 +88,6 @@ const hasNewMessage = unreadCount > 0;
 
     checkBig5Data();
   }, [backgroundOnly, navigate]);
-
-  // ====== 랜덤 일기 존재 여부 확인 ======
-  useEffect(() => {
-    if (backgroundOnly) return;
-
-    const checkRandomDiary = async () => {
-      try {
-        await diaryApi.getRandom();
-        console.log('✅ 랜덤 일기 존재 - cat_message 이미지 표시');
-        setHasRandomDiary(true);
-      } catch (error: any) {
-        console.log('❌ 랜덤 일기 없음 - 기본 고양이 이미지 표시');
-        setHasRandomDiary(false);
-      }
-    };
-
-    checkRandomDiary();
-  }, [backgroundOnly]);
-
-  // ============================================================================
-  // 🔄 자동 주간 채팅 분석 (BIG5 업데이트 + 그림일기 생성)
-  // ============================================================================
-  // TODO: [백엔드 스케줄러로 대체 가능]
-  // 현재는 프론트엔드에서 앱 접속 시 실행됩니다.
-  // 백엔드에서 @Scheduled로 구현하면 이 useEffect 전체를 삭제해도 됩니다.
-  // 백엔드 구현 시 필요한 정보:
-  //   - API: chatApi.analyzeChat(startDate, endDate)
-  //   - 기간: 일주일 (endDate 기준 7일 전 ~ endDate)
-  //   - 실행 시간: settings.diaryGenerationTime
-  //   - 결과: BIG5 점수 업데이트 + 그림일기 생성
-  // ============================================================================
-  useEffect(() => {
-    if (backgroundOnly) return;
-
-    const runWeeklyAnalysis = async () => {
-      try {
-        // 1. 설정에서 일기 생성 시간 가져오기
-        const settings = await settingsApi.getSettings();
-        const targetTime = settings.diaryGenerationTime || '22:00';
-        const [targetHour, targetMinute] = targetTime.split(':').map(Number);
-
-        // 2. 마지막 실행일 체크
-        const lastRun = localStorage.getItem('lastWeeklyAnalysis');
-        const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
-
-        // 3. 오늘 설정 시간
-        const todayTarget = new Date();
-        todayTarget.setHours(targetHour, targetMinute, 0, 0);
-
-        // 4. 어제 날짜 계산
-        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-        console.log('[자동분석] 설정 시간:', targetTime);
-        console.log('[자동분석] 마지막 실행:', lastRun);
-        console.log('[자동분석] 오늘:', todayStr, '| 어제:', yesterdayStr);
-
-        // ============================================================
-        // 분석 실행 조건 체크
-        // ============================================================
-        let shouldRun = false;
-        let analysisEndDate = todayStr;
-
-        // Case 1: 어제 분석 누락됨 (어제 날짜로 분석 실행)
-        if (lastRun && lastRun < yesterdayStr) {
-          console.log('[자동분석] 어제 분석 누락됨 - 어제 날짜로 실행');
-          shouldRun = true;
-          analysisEndDate = yesterdayStr;
-        }
-        // Case 2: 오늘 설정 시간 이후 + 오늘 아직 안 함 (오늘 날짜로 분석 실행)
-        else if (now >= todayTarget && lastRun !== todayStr) {
-          console.log('[자동분석] 오늘 설정 시간 도달 - 오늘 날짜로 실행');
-          shouldRun = true;
-          analysisEndDate = todayStr;
-        }
-        // Case 3: 최초 실행 (lastRun이 없음)
-        else if (!lastRun && now >= todayTarget) {
-          console.log('[자동분석] 최초 실행');
-          shouldRun = true;
-          analysisEndDate = todayStr;
-        }
-
-        console.log('[자동분석] 실행여부:', shouldRun, '| 분석 기준일:', analysisEndDate);
-
-        if (shouldRun) {
-          // 5. 일주일 전 ~ 분석 기준일 기간 계산
-          const endDate = new Date(analysisEndDate);
-          const weekAgo = new Date(endDate.getTime() - 7 * 24 * 60 * 60 * 1000);
-          const startDateStr = weekAgo.toISOString().split('T')[0];
-
-          console.log('[자동분석] 분석 기간:', startDateStr, '~', analysisEndDate);
-
-          // 6. 채팅 분석 API 호출 (BIG5 업데이트 + 그림일기 생성)
-          const result = await chatApi.analyzeChat(startDateStr, analysisEndDate);
-          console.log('[자동분석] 분석 완료:', result);
-
-          // 7. 마지막 실행일 저장 (분석 기준일 저장)
-          localStorage.setItem('lastWeeklyAnalysis', analysisEndDate);
-        }
-      } catch (error) {
-        console.error('[자동분석] 오류:', error);
-      }
-    };
-
-    runWeeklyAnalysis();
-  }, [backgroundOnly]);
-  // ============================================================================
-  // 🔄 자동 주간 채팅 분석 끝 - 백엔드 스케줄러 구현 시 위 useEffect 삭제
-  // ============================================================================
 
   // ====== 현재 활성화된 튜토리얼 체크 (동시에 하나만) ======
   const isAnyTutorialActive = showTutorial || showSupportTutorial || showAirplaneTutorial;
