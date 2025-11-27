@@ -10,7 +10,11 @@
     "preview": "vite preview",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "cap:sync": "npx cap sync",
+    "cap:build": "npm run build && npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:run:android": "npx cap run android"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
@@ -40,6 +44,7 @@
     "@types/react-calendar": "^3.9.0",
     "@types/react-dom": "^19.1.9",
     "@types/react-speech-recognition": "^3.9.6",
+    "@vitejs/plugin-legacy": "^7.2.1",
     "@vitejs/plugin-react": "^5.0.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.36.0",

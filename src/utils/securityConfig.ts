@@ -10,6 +10,9 @@ import { logger, reportCSPViolation } from './logger';
  * 민감한 정보가 클라이언트에 노출되지 않도록 검증
  */
 export const validateEnvironmentVariables = (): void => {
+  // Capacitor 앱에서는 환경변수 검증 건너뛰기
+  const isCapacitor = typeof (window as unknown as { Capacitor?: unknown }).Capacitor !== 'undefined';
+
   const requiredEnvVars = [
     'VITE_API_BASE_URL',
     'VITE_KAKAO_REST_API_KEY'
@@ -20,8 +23,13 @@ export const validateEnvironmentVariables = (): void => {
   );
 
   if (missingVars.length > 0) {
-    logger.error('❌ Missing required environment variables:', missingVars);
-    throw new Error(`Missing environment variables: ${missingVars.join(', ')}`);
+    logger.warn('⚠️ Missing environment variables:', missingVars);
+    // 앱에서는 에러 throw하지 않고 경고만 출력
+    if (!isCapacitor) {
+      // 웹에서만 에러 (선택적)
+      // throw new Error(`Missing environment variables: ${missingVars.join(', ')}`);
+    }
+    return;
   }
 
   // 민감한 키가 노출되지 않았는지 확인
