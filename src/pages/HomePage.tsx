@@ -6,7 +6,7 @@ import { ROUTES } from "../constants/routes";
 import { useTutorial } from "../contexts/TutorialContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { messageApi, settingsApi, chatApi } from "../utils/api";
+import { messageApi, settingsApi, chatApi, diaryApi } from "../utils/api";
 import Tutorial from "./Tutorial";
 import api from "../utils/api";
 
@@ -54,8 +54,8 @@ export default function HomePage({ hideButtons = false, backgroundOnly = false }
   const [isBookOpening, setIsBookOpening] = useState(false);
   const [isBig5Checked, setIsBig5Checked] = useState(false);
 
-  // TODO: 백엔드에서 hasRandomDiary 플래그 받아오기
-  const [hasRandomDiary, setHasRandomDiary] = useState(true);
+  // 랜덤 일기 존재 여부 (API로 확인)
+  const [hasRandomDiary, setHasRandomDiary] = useState(false);
 
   // ====== 백엔드 API로 unreadCount 조회 ======
   const { data: messagesData } = useQuery({
@@ -88,6 +88,24 @@ const hasNewMessage = unreadCount > 0;
 
     checkBig5Data();
   }, [backgroundOnly, navigate]);
+
+  // ====== 랜덤 일기 존재 여부 확인 ======
+  useEffect(() => {
+    if (backgroundOnly) return;
+
+    const checkRandomDiary = async () => {
+      try {
+        await diaryApi.getRandom();
+        console.log('✅ 랜덤 일기 존재 - cat_message 이미지 표시');
+        setHasRandomDiary(true);
+      } catch (error: any) {
+        console.log('❌ 랜덤 일기 없음 - 기본 고양이 이미지 표시');
+        setHasRandomDiary(false);
+      }
+    };
+
+    checkRandomDiary();
+  }, [backgroundOnly]);
 
   // ============================================================================
   // 🔄 자동 주간 채팅 분석 (BIG5 업데이트 + 그림일기 생성)
