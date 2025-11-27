@@ -1,4 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { AuthProvider } from './contexts/AuthContext';
 import { TutorialProvider } from './contexts/TutorialContext';
 import { DarkModeProvider } from './contexts/DarkModeContext';
@@ -23,6 +26,38 @@ import RandomDiaryPage from './pages/RandomDiaryPage';
 import Big5StatsPage from './pages/Big5StatsPage';
 import Big5TestPage from './pages/Big5TestPage';
 
+// Deep Link 처리 컴포넌트
+function DeepLinkHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Capacitor 앱에서만 실행
+    if (!Capacitor.isNativePlatform()) return;
+
+    // 앱이 Deep Link로 열렸을 때 처리
+    CapApp.addListener('appUrlOpen', (event) => {
+      console.log('Deep Link URL:', event.url);
+
+      // catus://auth/kakao/callback?code=xxx 형식 처리
+      const url = new URL(event.url);
+      if (url.host === 'auth' && url.pathname.includes('kakao/callback')) {
+        const code = url.searchParams.get('code');
+        if (code) {
+          // 카카오 콜백 페이지로 이동 (code 파라미터 포함)
+          navigate(`/auth/kakao/callback?code=${code}`);
+        }
+      }
+    });
+
+    // 클린업
+    return () => {
+      CapApp.removeAllListeners();
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -31,6 +66,7 @@ function App() {
           <ToastProvider>
             <TutorialProvider>
               <Router>
+              <DeepLinkHandler />
               <Routes>
                 {/* Public Routes */}
                 <Route path="/" element={<LoginPage />} />

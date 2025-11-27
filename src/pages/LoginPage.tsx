@@ -1,14 +1,24 @@
 import { useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import logincatImage from '../assets/images/logincat.png';
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   const handleKakaoLogin = (): void => {
-    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${import.meta.env.VITE_KAKAO_REST_API_KEY}&redirect_uri=${import.meta.env.VITE_KAKAO_REDIRECT_URI}&response_type=code`;
+    // 앱에서는 Deep Link용 리다이렉트 URI 사용
+    const isNative = Capacitor.isNativePlatform();
+    const redirectUri = isNative
+      ? 'catus://auth/kakao/callback'
+      : import.meta.env.VITE_KAKAO_REDIRECT_URI;
 
-    console.log('카카오 로그인 시작 - Build 20251114-2140');
+    const KAKAO_AUTH_URL = `https://kauth.kakao.com/oauth/authorize?client_id=${import.meta.env.VITE_KAKAO_REST_API_KEY}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code`;
+
+    console.log('카카오 로그인 시작');
+    console.log('Platform:', isNative ? 'Native App' : 'Web');
+    console.log('Redirect URI:', redirectUri);
     console.log('KAKAO_AUTH_URL:', KAKAO_AUTH_URL);
+
     window.location.href = KAKAO_AUTH_URL;
   };
 
