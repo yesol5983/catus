@@ -3,7 +3,7 @@
  * 다른 사용자의 익명 일기를 랜덤하게 보여주는 페이지
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -31,6 +31,13 @@ export default function RandomDiaryPage() {
     queryFn: () => diaryApi.getRandom(),
     retry: false,
   });
+
+  // 일기를 보면 localStorage에 저장 (다음에 같은 일기 안 보이게)
+  useEffect(() => {
+    if (diary?.diaryId) {
+      localStorage.setItem('lastRandomDiaryId', String(diary.diaryId));
+    }
+  }, [diary?.diaryId]);
 
   // 새로운 랜덤 일기 불러오기
   const handleRefresh = () => {

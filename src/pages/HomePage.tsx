@@ -6,7 +6,7 @@ import { ROUTES } from "../constants/routes";
 import { useTutorial } from "../contexts/TutorialContext";
 import { useDarkMode } from "../contexts/DarkModeContext";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { messageApi } from "../utils/api";
+import { messageApi, diaryApi } from "../utils/api";
 import Tutorial from "./Tutorial";
 import api from "../utils/api";
 
@@ -88,6 +88,31 @@ const hasNewMessage = unreadCount > 0;
 
     checkBig5Data();
   }, [backgroundOnly, navigate]);
+
+  // ====== 랜덤 일기 존재 여부 확인 (새 일기면 표시) ======
+  useEffect(() => {
+    if (backgroundOnly) return;
+
+    const checkRandomDiary = async () => {
+      try {
+        const data = await diaryApi.getRandom();
+        const lastViewedId = localStorage.getItem('lastRandomDiaryId');
+
+        // 이미 본 일기면 표시 안함
+        if (lastViewedId === String(data.diaryId)) {
+          setHasRandomDiary(false);
+          return;
+        }
+
+        // 새로운 일기면 표시
+        setHasRandomDiary(true);
+      } catch {
+        setHasRandomDiary(false);
+      }
+    };
+
+    checkRandomDiary();
+  }, [backgroundOnly]);
 
   // ====== 현재 활성화된 튜토리얼 체크 (동시에 하나만) ======
   const isAnyTutorialActive = showTutorial || showSupportTutorial || showAirplaneTutorial;
