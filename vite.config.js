@@ -10,7 +10,7 @@ export default defineConfig({
       targets: ['defaults', 'not IE 11', 'Android >= 7'],
     }),
   ],
-  base: './',  // Capacitor 앱용 상대 경로
+  base: '/',  // 절대 경로 (Vercel + Capacitor 모두 지원)
   server: {
     host: true,
     port: 8100,
