@@ -34,7 +34,7 @@ export default function RandomDiaryPage() {
 
   // 일기를 보면 localStorage에 저장 (다음에 같은 일기 안 보이게)
   useEffect(() => {
-    if (diary?.diaryId) {
+  if (diary?.diaryId) {
       localStorage.setItem('lastRandomDiaryId', String(diary.diaryId));
     }
   }, [diary?.diaryId]);

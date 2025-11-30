@@ -32,7 +32,7 @@ export default function CalendarPage() {
   const month = displayDate.getMonth() + 1;
 
   // Fetch real diary data from API
-  const { diaries: diaryData, loading, isFetching } = useDiaryList(year, month);
+  const { diaries: diaryData, loading } = useDiaryList(year, month);
 
   // 캘린더 튜토리얼 표시 - 캘린더가 완전히 렌더링된 후에 시작
   useEffect(() => {
@@ -71,7 +71,13 @@ export default function CalendarPage() {
     const dateStr = `${clickedYear}-${String(clickedMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
     if (diaryData && diaryData[dateStr]) {
-      navigate(`${ROUTES.DIARY}/${diaryData[dateStr].id}`);
+      const diary = diaryData[dateStr];
+      // isRead가 false면 신규 일기 화면(DiaryRevealPage)으로, true면 상세 화면으로
+      if (diary.isRead === false) {
+        navigate(`${ROUTES.DIARY_REVEAL}/${diary.id}`);
+      } else {
+        navigate(`${ROUTES.DIARY}/${diary.id}`);
+      }
     }
   };
 
@@ -258,7 +264,13 @@ export default function CalendarPage() {
                             animate={{ opacity: 1, scale: 1 }}
                             className="rounded-[8px] overflow-hidden shadow-sm border cursor-pointer hover:opacity-80 transition-opacity"
                             style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)' }}
-                            onClick={() => navigate(`${ROUTES.DIARY}/${diary.id}`)}
+                            onClick={() => {
+                              if (diary.isRead === false) {
+                                navigate(`${ROUTES.DIARY_REVEAL}/${diary.id}`);
+                              } else {
+                                navigate(`${ROUTES.DIARY}/${diary.id}`);
+                              }
+                            }}
                           >
                             {/* 이미지 */}
                             <div className="w-full aspect-square relative overflow-hidden">

@@ -4,9 +4,9 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { diaryApi } from '../utils/api';
 import { ROUTES } from '../constants/routes';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -18,6 +18,7 @@ export default function DiaryRevealPage() {
   const { date } = useParams<{ date: string }>();
   const diaryId = date ? parseInt(date, 10) : null;
   const { isDarkMode } = useDarkMode();
+  const queryClient = useQueryClient();
   const [showImage, setShowImage] = useState(false);
 
   // 일기 상세 조회 (백엔드: GET /api/diary/{id})
@@ -40,6 +41,19 @@ export default function DiaryRevealPage() {
       return () => clearTimeout(timer);
     }
   }, [diary, isLoading]);
+
+  // 일기 조회 후 읽음 처리 및 목록 캐시 무효화
+  useEffect(() => {
+    if (diary && diaryId) {
+      const readDiaryIdsStr = localStorage.getItem('catus_read_diary_ids');
+      const readDiaryIds: number[] = readDiaryIdsStr ? JSON.parse(readDiaryIdsStr) : [];
+      if (!readDiaryIds.includes(diaryId)) {
+        readDiaryIds.push(diaryId);
+        localStorage.setItem('catus_read_diary_ids', JSON.stringify(readDiaryIds));
+      }
+      queryClient.invalidateQueries({ queryKey: ['diary', 'list'] });
+    }
+  }, [diary, diaryId, queryClient]);
 
   const formatDate = (dateStr: string) => {
     const [year, month, day] = dateStr.split('-');

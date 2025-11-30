@@ -102,14 +102,19 @@ export interface ChatAnalysisResponse {
 // ===== 일기 관련 타입 =====
 // 백엔드: GET /api/diary/list 응답
 export interface DiaryListResponse {
-  year: number;
-  month: number;
+  year?: number;
+  month?: number;
   diaries: Array<{
     id: number;
-    date: string;
-    title: string;
-    previewText: string;
-    thumbnailUrl: string;
+    date?: string;
+    diaryDate?: string; // 백엔드 실제 필드명
+    title?: string;
+    emotion?: Emotion; // 감정 정보
+    previewText?: string;
+    contentPreview?: string; // 백엔드 실제 필드명
+    thumbnailUrl?: string;
+    image?: string; // 백엔드 실제 필드명
+    isRead?: boolean; // 읽음 여부 (백엔드 추가 예정)
   }>;
   totalCount: number;
 }
@@ -153,6 +158,9 @@ export interface Diary {
   title: string;
   content: string;
   imageUrl: string;
+  thumbnailUrl?: string; // 캘린더용 썸네일
+  emotion?: Emotion; // 감정 정보
+  isRead?: boolean; // 읽음 여부 (백엔드 추가 예정, 현재 프론트에서 관리)
   createdAt: string;
 }
 
