@@ -32,6 +32,13 @@ export default function DiaryRevealPage() {
     retry: 2,
   });
 
+  // 🔍 디버그: API 응답 확인
+  useEffect(() => {
+    if (diary) {
+      console.log('📷 [DiaryRevealPage] diary 응답:', diary);
+    }
+  }, [diary]);
+
   // 이미지 애니메이션 시작
   useEffect(() => {
     if (diary && !isLoading) {
