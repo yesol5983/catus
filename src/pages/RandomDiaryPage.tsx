@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { diaryApi, messageApi } from '../utils/api';
 import { useToast } from '../contexts/ToastContext';
 import { ROUTES } from '../constants/routes';
@@ -18,6 +18,7 @@ import type { DiaryRandomResponse, Emotion } from '../types';
 
 export default function RandomDiaryPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [messageContent, setMessageContent] = useState('');
   const [showMessagePreview, setShowMessagePreview] = useState(false);
@@ -52,6 +53,7 @@ export default function RandomDiaryPage() {
 
   // 새로운 랜덤 일기 불러오기
   const handleRefresh = () => {
+    queryClient.removeQueries({ queryKey: ['random-diary'] });
     refetch();
   };
 
