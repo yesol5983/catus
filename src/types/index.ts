@@ -122,10 +122,13 @@ export interface DiaryListResponse {
 // 백엔드: GET /api/diary/{id} 응답
 export interface DiaryDetailResponse {
   id: number;
-  date: string;
-  title: string;
+  date?: string;
+  diaryDate?: string; // 백엔드 실제 필드명
+  title?: string;
   content: string;
-  imageUrl: string;
+  imageUrl?: string;
+  image?: string; // 백엔드 실제 필드명
+  emotion?: Emotion;
   big5Scores?: {
     openness: number;
     conscientiousness: number;
@@ -133,7 +136,7 @@ export interface DiaryDetailResponse {
     agreeableness: number;
     neuroticism: number;
   };
-  createdAt: string;
+  createdAt?: string;
 }
 
 // 백엔드: PUT /api/diary/{id} 요청

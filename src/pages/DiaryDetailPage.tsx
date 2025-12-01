@@ -37,7 +37,8 @@ export default function DiaryDetailPage() {
     retry: 2,
   });
 
-  const diary: DiaryDetailResponse | undefined = diaryData;
+  // API 응답에서 diary 객체 추출 (응답 구조: { diary: {...}, anonymousMessages: [] })
+  const diary: DiaryDetailResponse | undefined = (diaryData as any)?.diary || diaryData;
 
   // 받은 메시지 조회 (백엔드: GET /api/message/received)
   const { data: messagesData } = useQuery({
@@ -161,7 +162,7 @@ export default function DiaryDetailPage() {
   const handleCopyToClipboard = async () => {
     if (!diary) return;
 
-    const shareText = `${diary.date ? formatDate(diary.date) : '오늘'}의 일기\n\n${diary.content || ''}`;
+    const shareText = `${(diary.diaryDate || diary.date) ? formatDate(diary.diaryDate || diary.date) : '오늘'}의 일기\n\n${diary.content || ''}`;
 
     try {
       await navigator.clipboard.writeText(shareText);
@@ -179,7 +180,7 @@ export default function DiaryDetailPage() {
   const handleShareToApp = async () => {
     if (!diary) return;
 
-    const shareTitle = `${diary.date ? formatDate(diary.date) : '오늘'}의 일기`;
+    const shareTitle = `${(diary.diaryDate || diary.date) ? formatDate(diary.diaryDate || diary.date) : '오늘'}의 일기`;
 
     setShowShareSheet(false);
 
@@ -212,9 +213,10 @@ export default function DiaryDetailPage() {
         };
 
         // 이미지가 있으면 파일로 공유 시도
-        if (diary.imageUrl) {
+        const imageUrl = diary.image || diary.imageUrl;
+        if (imageUrl) {
           try {
-            const response = await fetch(diary.imageUrl);
+            const response = await fetch(imageUrl);
             const blob = await response.blob();
             const file = new File([blob], 'diary-image.png', { type: blob.type });
 
@@ -334,7 +336,7 @@ export default function DiaryDetailPage() {
           className="text-[16px] font-[600]"
           style={{ color: isDarkMode ? '#FFFFFF' : '#5E7057' }}
         >
-          {diary.date && formatDate(diary.date)}
+          {(diary.diaryDate || diary.date) && formatDate(diary.diaryDate || diary.date)}
         </div>
 
         <button
@@ -347,9 +349,9 @@ export default function DiaryDetailPage() {
       </div>
 
       {/* 일기 이미지 */}
-      {diary.imageUrl && (
+      {(diary.image || diary.imageUrl) && (
         <img
-          src={diary.imageUrl}
+          src={diary.image || diary.imageUrl}
           alt="일기 이미지"
           className="w-full aspect-square object-cover mx-auto block max-h-[400px] max-w-[400px]"
         />
