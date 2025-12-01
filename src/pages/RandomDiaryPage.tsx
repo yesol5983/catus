@@ -43,11 +43,12 @@ export default function RandomDiaryPage() {
   const diary = (diaryResponse as any)?.diary || diaryResponse;
 
   // 일기를 보면 localStorage에 저장 (다음에 같은 일기 안 보이게)
+  const diaryId = diary?.diaryId || diary?.id;
   useEffect(() => {
-  if (diary?.diaryId) {
-      localStorage.setItem('lastRandomDiaryId', String(diary.diaryId));
+    if (diaryId) {
+      localStorage.setItem('lastRandomDiaryId', String(diaryId));
     }
-  }, [diary?.diaryId]);
+  }, [diaryId]);
 
   // 새로운 랜덤 일기 불러오기
   const handleRefresh = () => {
@@ -73,7 +74,7 @@ export default function RandomDiaryPage() {
       setShowPlaneAnimation(true);
 
       // 백엔드 파라미터: diaryId, content
-      await messageApi.send(diary.diaryId, messageContent);
+      await messageApi.send(diaryId, messageContent);
 
       // 애니메이션 후 페이지 이동
       setTimeout(() => {
@@ -215,7 +216,7 @@ export default function RandomDiaryPage() {
                   className="text-[11px] mt-[2px]"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
-                  {diary.date && formatDate(diary.date)}
+                  {(diary.diaryDate || diary.date) && formatDate(diary.diaryDate || diary.date)}
                 </p>
               </div>
               <div className="flex items-center gap-[8px]">
@@ -240,9 +241,9 @@ export default function RandomDiaryPage() {
 
             {/* 그림 */}
             <div className="px-[16px] mb-[16px]">
-              {diary.thumbnailUrl ? (
+              {(diary.image || diary.thumbnailUrl) ? (
                 <img
-                  src={diary.thumbnailUrl}
+                  src={diary.image || diary.thumbnailUrl}
                   alt="일기 그림"
                   className="w-full h-[260px] rounded-[12px] object-cover"
                 />
@@ -257,13 +258,13 @@ export default function RandomDiaryPage() {
             </div>
 
             {/* 미리보기 텍스트 */}
-            {diary.previewText && (
+            {(diary.content || diary.previewText) && (
               <div className="px-[16px] mb-[12px]">
                 <p
                   className="text-[12px] leading-relaxed"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
-                  {diary.previewText}
+                  {diary.content || diary.previewText}
                 </p>
               </div>
             )}
