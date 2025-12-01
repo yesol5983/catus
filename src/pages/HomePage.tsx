@@ -95,11 +95,14 @@ const hasNewMessage = unreadCount > 0;
 
     const checkRandomDiary = async () => {
       try {
-        const data = await diaryApi.getRandom();
+        const response = await diaryApi.getRandom();
+        // API 응답 구조: { diary: {...} }
+        const data = (response as any)?.diary || response;
+        const diaryId = data?.diaryId || data?.id;
         const lastViewedId = localStorage.getItem('lastRandomDiaryId');
 
         // 이미 본 일기면 표시 안함
-        if (lastViewedId === String(data.diaryId)) {
+        if (lastViewedId === String(diaryId)) {
           setHasRandomDiary(false);
           return;
         }
