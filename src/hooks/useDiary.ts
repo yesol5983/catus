@@ -33,6 +33,15 @@ export const useDiaryList = (year: number, month: number): UseDiaryListReturn =>
     try {
       const data = await diaryApi.getList(year, month);
 
+      // 🔍 백엔드 응답 날짜 형식 확인용 로그
+      console.log('📅 [useDiary] API 응답:', {
+        year,
+        month,
+        diariesCount: data.diaries?.length,
+        sampleDiary: data.diaries?.[0],
+        allDates: data.diaries?.map((d: any) => ({ diaryDate: d.diaryDate, date: d.date, thumbnailUrl: d.thumbnailUrl }))
+      });
+
       // 읽은 일기 ID 목록 가져오기 (localStorage)
       const readDiaryIdsStr = localStorage.getItem('catus_read_diary_ids');
       const readDiaryIds: number[] = readDiaryIdsStr ? JSON.parse(readDiaryIdsStr) : [];
