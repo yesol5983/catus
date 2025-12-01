@@ -95,14 +95,15 @@ export const useDiary = (id: number | null): UseDiaryReturn => {
     setError(null);
 
     try {
-      // 백엔드: getById(id) 사용, 응답: {id, date, title, content, imageUrl, big5Scores?, createdAt}
-      const data = await diaryApi.getById(id);
+      // 백엔드: getById(id) 사용, 응답 구조: { diary: {...} }
+      const response = await diaryApi.getById(id);
+      const data = (response as any)?.diary || response;
       setDiary({
         id: data.id,
-        date: data.date,
+        date: data.diaryDate || data.date,
         title: data.title,
         content: data.content,
-        imageUrl: data.imageUrl,
+        imageUrl: data.image || data.imageUrl,
         createdAt: data.createdAt,
       });
     } catch (err) {
