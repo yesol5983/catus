@@ -92,9 +92,9 @@ const RadarChart = ({ scores, isDarkMode }: { scores: Record<string, number>; is
   return (
     <svg
       width="100%"
-      height="auto"
       viewBox={`0 0 ${size} ${size}`}
       style={{ maxWidth: '240px' }}
+      preserveAspectRatio="xMidYMid meet"
     >
       {/* 배경 오각형 */}
       {backgroundPolygons}
