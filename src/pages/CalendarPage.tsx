@@ -90,7 +90,7 @@ export default function CalendarPage() {
     const dateStr = `${tileYear}-${String(tileMonth).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const diary = diaryData ? diaryData[dateStr] : null;
 
-    if (diary && diary.thumbnailUrl && diary.thumbnailUrl.trim() !== '') {
+    if (diary && diary.thumbnailUrl) {
       return (
         <div
           className="absolute inset-[3px] rounded-[6px] overflow-hidden border-[2px]"
@@ -253,8 +253,6 @@ export default function CalendarPage() {
                       {diaryData && Object.entries(diaryData)
                         .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
                         .filter(([, diary]) => {
-                          // thumbnailUrl이 유효한 일기만 표시
-                          if (!diary.thumbnailUrl || diary.thumbnailUrl.trim() === '') return false;
                           if (feedFilter === 'my') return true;
                           if (feedFilter === 'public') return !(diary as any).isPrivate;
                           return true;
