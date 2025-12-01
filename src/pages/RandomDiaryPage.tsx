@@ -26,11 +26,21 @@ export default function RandomDiaryPage() {
   const maxMessageLength = 200;
 
   // 랜덤 일기 조회 (백엔드 응답: {diaryId, title, date, previewText, thumbnailUrl})
-  const { data: diary, isLoading, error, refetch } = useQuery<DiaryRandomResponse>({
+  const { data: diaryResponse, isLoading, error, refetch } = useQuery<DiaryRandomResponse>({
     queryKey: ['random-diary'],
     queryFn: () => diaryApi.getRandom(),
     retry: false,
   });
+
+  // 🔍 디버그: API 응답 확인
+  useEffect(() => {
+    if (diaryResponse) {
+      console.log('🎲 [RandomDiaryPage] API 응답:', diaryResponse);
+    }
+  }, [diaryResponse]);
+
+  // API 응답 구조에 맞게 diary 추출
+  const diary = (diaryResponse as any)?.diary || diaryResponse;
 
   // 일기를 보면 localStorage에 저장 (다음에 같은 일기 안 보이게)
   useEffect(() => {
