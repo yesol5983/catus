@@ -33,13 +33,6 @@ export default function RandomDiaryPage() {
     retry: false,
   });
 
-  // 🔍 디버그: API 응답 확인
-  useEffect(() => {
-    if (diaryResponse) {
-      console.log('🎲 [RandomDiaryPage] API 응답:', diaryResponse);
-    }
-  }, [diaryResponse]);
-
   // API 응답 구조에 맞게 diary 추출
   const diary = (diaryResponse as any)?.diary || diaryResponse;
 

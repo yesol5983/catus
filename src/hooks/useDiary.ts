@@ -33,20 +33,11 @@ export const useDiaryList = (year: number, month: number): UseDiaryListReturn =>
     try {
       const data = await diaryApi.getList(year, month);
 
-      // 🔍 백엔드 응답 날짜 형식 확인용 로그
-      console.log('📅 [useDiary] API 응답:', {
-        year,
-        month,
-        diariesCount: data.diaries?.length,
-        sampleDiary: data.diaries?.[0],
-        allDates: data.diaries?.map((d: any) => ({ diaryDate: d.diaryDate, date: d.date, thumbnailUrl: d.thumbnailUrl }))
-      });
-
       // 읽은 일기 ID 목록 가져오기 (localStorage)
       const readDiaryIdsStr = localStorage.getItem('catus_read_diary_ids');
       const readDiaryIds: number[] = readDiaryIdsStr ? JSON.parse(readDiaryIdsStr) : [];
 
-      // 1단계: 목록 데이터로 초기 맵 생성
+      // 목록 데이터로 맵 생성 (thumbnailUrl/image가 이미 포함되어 있음)
       const diariesMap = data.diaries.reduce((acc: DiaryMap, diary: any) => {
         const dateKey = diary.diaryDate || diary.date;
         // isRead: 백엔드 값 우선, 없으면 localStorage 체크
@@ -66,44 +57,7 @@ export const useDiaryList = (year: number, month: number): UseDiaryListReturn =>
         return acc;
       }, {});
 
-      // 먼저 목록 데이터 표시 (이미지 없이라도)
       setDiaries(diariesMap);
-
-      // 2단계: 이미지가 없는 일기들 개별 조회 (병렬 처리)
-      const diariesWithoutImage = Object.entries(diariesMap).filter(
-        ([, diary]) => !diary.thumbnailUrl && !diary.imageUrl
-      );
-
-      if (diariesWithoutImage.length > 0) {
-        const detailPromises = diariesWithoutImage.map(async ([dateKey, diary]) => {
-          try {
-            const detail = await diaryApi.getById(diary.id);
-            return {
-              dateKey,
-              imageUrl: detail.diary?.image || detail.image || detail.imageUrl,
-            };
-          } catch {
-            return { dateKey, imageUrl: null };
-          }
-        });
-
-        const details = await Promise.all(detailPromises);
-
-        // 이미지 정보 업데이트
-        setDiaries((prev) => {
-          const updated = { ...prev };
-          details.forEach(({ dateKey, imageUrl }) => {
-            if (imageUrl && updated[dateKey]) {
-              updated[dateKey] = {
-                ...updated[dateKey],
-                imageUrl,
-                thumbnailUrl: imageUrl,
-              };
-            }
-          });
-          return updated;
-        });
-      }
     } catch (err) {
       logError(err, { action: 'fetchDiaries', year, month });
       setError(err);
