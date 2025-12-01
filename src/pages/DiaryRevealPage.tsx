@@ -22,7 +22,7 @@ export default function DiaryRevealPage() {
   const [showImage, setShowImage] = useState(false);
 
   // 일기 상세 조회 (백엔드: GET /api/diary/{id})
-  const { data: diary, isLoading, error } = useQuery({
+  const { data: diaryResponse, isLoading, error } = useQuery({
     queryKey: ['diary', 'detail', diaryId],
     queryFn: async () => {
       if (!diaryId) throw new Error('일기 ID가 필요합니다.');
@@ -32,12 +32,8 @@ export default function DiaryRevealPage() {
     retry: 2,
   });
 
-  // 🔍 디버그: API 응답 확인
-  useEffect(() => {
-    if (diary) {
-      console.log('📷 [DiaryRevealPage] diary 응답:', diary);
-    }
-  }, [diary]);
+  // API 응답에서 diary 객체 추출 (응답 구조: { diary: {...}, anonymousMessages: [] })
+  const diary = diaryResponse?.diary || diaryResponse;
 
   // 이미지 애니메이션 시작
   useEffect(() => {
@@ -114,7 +110,7 @@ export default function DiaryRevealPage() {
       >
         <div style={{ width: '24px' }}></div>
         <div className="text-[16px] font-[600] text-[#5E7057]">
-          {diary.date && formatDate(diary.date)}
+          {(diary.diaryDate || diary.date) && formatDate(diary.diaryDate || diary.date)}
         </div>
         <button
           onClick={handleClose}
@@ -217,7 +213,7 @@ export default function DiaryRevealPage() {
                 }}
               >
                 <img
-                  src={diary.imageUrl}
+                  src={diary.image || diary.imageUrl}
                   alt="diary"
                   className="w-full h-full object-contain"
                 />
