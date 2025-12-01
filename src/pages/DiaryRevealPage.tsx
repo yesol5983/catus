@@ -226,7 +226,7 @@ export default function DiaryRevealPage() {
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: showImage ? 1 : 0, y: showImage ? 0 : 20 }}
-          transition={{ duration: 0.5, delay: 5.8 }}
+          transition={{ duration: 0.5, delay: 5.3 }}
           onClick={handleViewDetail}
           className="mt-[40px] px-[32px] py-[14px] rounded-[14px] text-[15px] font-semibold border-0"
           style={{
