@@ -16,7 +16,9 @@ export default function MessagesPage() {
   const { data: messagesData, isLoading, error } = useQuery({
     queryKey: ['messages', 'received'],
     queryFn: async () => {
-      return await messageApi.getReceived();
+      const response = await messageApi.getReceived();
+      console.log('📬 [MessagesPage] API 응답:', response);
+      return response;
     },
     retry: 2,
   });
