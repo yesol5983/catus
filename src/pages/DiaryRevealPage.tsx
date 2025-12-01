@@ -15,8 +15,8 @@ import canvas from '../assets/images/canvas.png';
 
 export default function DiaryRevealPage() {
   const navigate = useNavigate();
-  const { date } = useParams<{ date: string }>();
-  const diaryId = date ? parseInt(date, 10) : null;
+  const { id } = useParams<{ id: string }>();
+  const diaryId = id ? parseInt(id, 10) : null;
   const { isDarkMode } = useDarkMode();
   const queryClient = useQueryClient();
   const [showImage, setShowImage] = useState(false);

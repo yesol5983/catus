@@ -10,7 +10,7 @@ export const ROUTES = {
   CHAT_DATE: "/chat/:date",
   CALENDAR: "/calendar",
   DIARY: "/diary",
-  DIARY_DETAIL: "/diary/:date",
+  DIARY_DETAIL: "/diary/:id",
   SETTINGS: "/settings",
   MESSAGES: "/messages",
   BIG5_STATS: "/big5/stats",

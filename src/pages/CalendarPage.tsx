@@ -74,9 +74,9 @@ export default function CalendarPage() {
       const diary = diaryData[dateStr];
       // isRead가 false면 신규 일기 화면(DiaryRevealPage)으로, true면 상세 화면으로
       if (diary.isRead === false) {
-        navigate(`${ROUTES.DIARY_REVEAL}/${diary.date}`);
+        navigate(`${ROUTES.DIARY_REVEAL}/${diary.id}`);
       } else {
-        navigate(`${ROUTES.DIARY}/${diary.date}`);
+        navigate(`${ROUTES.DIARY}/${diary.id}`);
       }
     }
   };
@@ -266,9 +266,9 @@ export default function CalendarPage() {
                             style={{ backgroundColor: 'var(--color-bg-card)', borderColor: 'var(--color-border)' }}
                             onClick={() => {
                               if (diary.isRead === false) {
-                                navigate(`${ROUTES.DIARY_REVEAL}/${diary.date}`);
+                                navigate(`${ROUTES.DIARY_REVEAL}/${diary.id}`);
                               } else {
-                                navigate(`${ROUTES.DIARY}/${diary.date}`);
+                                navigate(`${ROUTES.DIARY}/${diary.id}`);
                               }
                             }}
                           >

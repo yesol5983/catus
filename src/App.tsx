@@ -81,8 +81,8 @@ function App() {
                 <Route path="/chat/analysis" element={<PrivateRoute><ChatAnalysisPage /></PrivateRoute>} />
                 <Route path="/chat/:date" element={<PrivateRoute><ChatDatePage /></PrivateRoute>} />
                 <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
-                <Route path="/diary-reveal/:date" element={<PrivateRoute><DiaryRevealPage /></PrivateRoute>} />
-                <Route path="/diary/:date" element={<PrivateRoute><DiaryDetailPage /></PrivateRoute>} />
+                <Route path="/diary-reveal/:id" element={<PrivateRoute><DiaryRevealPage /></PrivateRoute>} />
+                <Route path="/diary/:id" element={<PrivateRoute><DiaryDetailPage /></PrivateRoute>} />
                 <Route path="/messages" element={<PrivateRoute><MessagesPage /></PrivateRoute>} />
                 <Route path="/settings" element={<PrivateRoute><SettingsPage /></PrivateRoute>} />
                 <Route path="/random-diary" element={<PrivateRoute><RandomDiaryPage /></PrivateRoute>} />
