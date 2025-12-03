@@ -740,8 +740,15 @@ const hasNewMessage = unreadCount > 0;
       {/* 하단 채팅 인풋바 */}
       {!hideButtons && !backgroundOnly && (
         <div
-          className="fixed bottom-0 z-50 cursor-pointer group"
-          style={{ width: '70%', padding: '3px', left: '46%', transform: 'translateX(-50%)' }}
+          className="fixed z-50 cursor-pointer group"
+          style={{
+            width: '70%',
+            padding: '3px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            bottom: '10px',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)'
+          }}
           onClick={openChat}
         >
           <input
