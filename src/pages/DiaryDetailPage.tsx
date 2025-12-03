@@ -181,17 +181,27 @@ export default function DiaryDetailPage() {
     if (!diary) return;
 
     const shareTitle = `${(diary.diaryDate || diary.date) ? formatDate(diary.diaryDate || diary.date) : '오늘'}의 일기`;
+    const imageUrl = diary.image || diary.imageUrl;
 
     setShowShareSheet(false);
 
     // 네이티브 앱인 경우 Capacitor Share 사용
     if (Capacitor.isNativePlatform()) {
       try {
-        await Share.share({
+        const shareOptions: { title: string; text?: string; url?: string; dialogTitle: string } = {
           title: shareTitle,
-          text: diary.content || '',
           dialogTitle: '일기 공유하기',
-        });
+        };
+
+        // 이미지가 있으면 이미지 URL을 공유, 없으면 텍스트만 공유
+        if (imageUrl) {
+          shareOptions.url = imageUrl;
+          shareOptions.text = diary.content || '';
+        } else {
+          shareOptions.text = diary.content || '';
+        }
+
+        await Share.share(shareOptions);
         setToastMessage('공유되었습니다');
       } catch (err: any) {
         if (err.message?.includes('cancel') || err.message?.includes('dismissed')) {
