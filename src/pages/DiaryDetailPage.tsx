@@ -270,18 +270,35 @@ export default function DiaryDetailPage() {
         };
 
         // 이미지가 있으면 파일로 공유 시도
-        const imageUrl = diary.image || diary.imageUrl;
         if (imageUrl) {
           try {
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
+            let blob: Blob;
+
+            // base64 data URL인 경우
+            if (imageUrl.startsWith('data:')) {
+              // data URL을 blob으로 변환
+              const base64Data = imageUrl.split(',')[1];
+              const mimeType = imageUrl.split(';')[0].split(':')[1] || 'image/png';
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              blob = new Blob([byteArray], { type: mimeType });
+            } else {
+              // 원격 URL인 경우 fetch
+              const response = await fetch(imageUrl);
+              blob = await response.blob();
+            }
+
             const file = new File([blob], 'diary-image.png', { type: blob.type });
 
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
               shareData.files = [file];
             }
           } catch (imgErr) {
-            console.log('이미지 공유 실패, 텍스트만 공유:', imgErr);
+            console.error('이미지 공유 실패, 텍스트만 공유:', imgErr);
           }
         }
 
