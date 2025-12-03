@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Capacitor } from '@capacitor/core';
 import { Share } from '@capacitor/share';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { ROUTES } from '../constants/routes';
 import { diaryApi, messageApi } from '../utils/api';
 import { useDarkMode } from '../contexts/DarkModeContext';
@@ -188,20 +189,63 @@ export default function DiaryDetailPage() {
     // 네이티브 앱인 경우 Capacitor Share 사용
     if (Capacitor.isNativePlatform()) {
       try {
-        const shareOptions: { title: string; text?: string; url?: string; dialogTitle: string } = {
-          title: shareTitle,
-          dialogTitle: '일기 공유하기',
-        };
+        let fileUri: string | undefined;
 
-        // 이미지가 있으면 이미지 URL을 공유, 없으면 텍스트만 공유
+        // 이미지가 있으면 캐시에 저장 후 파일 URI로 공유
         if (imageUrl) {
-          shareOptions.url = imageUrl;
-          shareOptions.text = diary.content || '';
-        } else {
-          shareOptions.text = diary.content || '';
+          try {
+            // 이미지 다운로드
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+
+            // blob을 base64로 변환
+            const base64 = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const result = reader.result as string;
+                // data:image/png;base64, 부분 제거
+                const base64Data = result.split(',')[1];
+                resolve(base64Data);
+              };
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+
+            // 캐시 디렉토리에 파일 저장
+            const fileName = `diary_share_${Date.now()}.png`;
+            await Filesystem.writeFile({
+              path: fileName,
+              data: base64,
+              directory: Directory.Cache,
+            });
+
+            // 파일 URI 가져오기
+            const uriResult = await Filesystem.getUri({
+              path: fileName,
+              directory: Directory.Cache,
+            });
+            fileUri = uriResult.uri;
+          } catch (imgErr) {
+            console.log('이미지 저장 실패, 텍스트만 공유:', imgErr);
+          }
         }
 
-        await Share.share(shareOptions);
+        // 공유 실행
+        if (fileUri) {
+          await Share.share({
+            title: shareTitle,
+            text: diary.content || '',
+            url: fileUri,
+            dialogTitle: '일기 공유하기',
+          });
+        } else {
+          await Share.share({
+            title: shareTitle,
+            text: diary.content || '',
+            dialogTitle: '일기 공유하기',
+          });
+        }
+
         setToastMessage('공유되었습니다');
       } catch (err: any) {
         if (err.message?.includes('cancel') || err.message?.includes('dismissed')) {
