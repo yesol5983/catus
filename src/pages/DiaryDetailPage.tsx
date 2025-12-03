@@ -189,33 +189,37 @@ export default function DiaryDetailPage() {
     // 네이티브 앱인 경우 Capacitor Share 사용
     if (Capacitor.isNativePlatform()) {
       try {
-        let fileUri: string | undefined;
+        let filePath: string | undefined;
 
-        // 이미지가 있으면 캐시에 저장 후 파일 URI로 공유
+        // 이미지가 있으면 캐시에 저장 후 파일로 공유
         if (imageUrl) {
           try {
-            // 이미지 다운로드
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
+            let base64Data: string;
 
-            // blob을 base64로 변환
-            const base64 = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => {
-                const result = reader.result as string;
-                // data:image/png;base64, 부분 제거
-                const base64Data = result.split(',')[1];
-                resolve(base64Data);
-              };
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
+            // 이미지가 base64 data URL인 경우
+            if (imageUrl.startsWith('data:')) {
+              // data:image/png;base64,xxxxx 에서 base64 부분만 추출
+              base64Data = imageUrl.split(',')[1];
+            } else {
+              // 원격 URL인 경우 fetch
+              const response = await fetch(imageUrl);
+              const blob = await response.blob();
+              base64Data = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  const result = reader.result as string;
+                  resolve(result.split(',')[1]);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+              });
+            }
 
             // 캐시 디렉토리에 파일 저장
             const fileName = `diary_share_${Date.now()}.png`;
             await Filesystem.writeFile({
               path: fileName,
-              data: base64,
+              data: base64Data,
               directory: Directory.Cache,
             });
 
@@ -224,18 +228,17 @@ export default function DiaryDetailPage() {
               path: fileName,
               directory: Directory.Cache,
             });
-            fileUri = uriResult.uri;
+            filePath = uriResult.uri;
           } catch (imgErr) {
-            console.log('이미지 저장 실패, 텍스트만 공유:', imgErr);
+            console.error('이미지 저장 실패:', imgErr);
           }
         }
 
-        // 공유 실행
-        if (fileUri) {
+        // 공유 실행 - files 파라미터 사용
+        if (filePath) {
           await Share.share({
             title: shareTitle,
-            text: diary.content || '',
-            url: fileUri,
+            files: [filePath],
             dialogTitle: '일기 공유하기',
           });
         } else {
