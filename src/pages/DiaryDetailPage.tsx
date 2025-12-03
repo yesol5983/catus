@@ -293,15 +293,24 @@ export default function DiaryDetailPage() {
             }
 
             const file = new File([blob], 'diary-image.png', { type: blob.type });
+            console.log('이미지 파일 생성됨:', file.size, file.type);
 
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            const canShareFiles = navigator.canShare && navigator.canShare({ files: [file] });
+            console.log('canShare files:', canShareFiles);
+
+            if (canShareFiles) {
               shareData.files = [file];
+              // 파일 공유 시 text 제거 (일부 브라우저에서 충돌)
+              delete shareData.text;
+            } else {
+              console.log('파일 공유 미지원, 텍스트만 공유');
             }
           } catch (imgErr) {
             console.error('이미지 공유 실패, 텍스트만 공유:', imgErr);
           }
         }
 
+        console.log('공유 데이터:', shareData);
         await navigator.share(shareData);
         setToastMessage('공유되었습니다');
       } catch (err: any) {
