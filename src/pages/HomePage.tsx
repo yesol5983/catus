@@ -743,9 +743,8 @@ const hasNewMessage = unreadCount > 0;
           className="fixed z-50 cursor-pointer group"
           style={{
             width: '70%',
-            padding: '3px',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            left: '15%',
+            right: '15%',
             bottom: '10px',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)'
           }}
