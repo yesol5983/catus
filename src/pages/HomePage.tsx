@@ -742,8 +742,9 @@ const hasNewMessage = unreadCount > 0;
         <div
           className="fixed z-50 cursor-pointer group"
           style={{
-            left: '15%',
-            right: '15%',
+            width: '70%',
+            left: '50%',
+            transform: 'translateX(-50%)',
             bottom: '10px',
             paddingBottom: 'env(safe-area-inset-bottom, 0px)'
           }}
